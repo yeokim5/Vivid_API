@@ -7,7 +7,7 @@ dotenv.config();
 // In production, you should use a service account
 try {
   admin.initializeApp({
-    projectId: process.env.FIREBASE_PROJECT_ID,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
   });
   console.log("Firebase Admin SDK initialized successfully");
 } catch (error) {
