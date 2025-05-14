@@ -1,4 +1,5 @@
 import { Request } from "express";
+import { IUser } from "../models/User";
 
 export interface ErrorWithStack extends Error {
   stack?: string;
@@ -9,8 +10,9 @@ export interface UserDocument {
   email: string;
   name: string;
   role: string;
+  profilePicture?: string;
 }
 
 export interface AuthRequest extends Request {
-  user?: UserDocument;
+  user?: UserDocument | IUser;
 }
