@@ -9,6 +9,7 @@ import { ErrorWithStack } from "./types";
 import connectDB from "./config/db";
 import passport from "./config/passport";
 import authRoutes from "./routes/authRoutes";
+import essayRoutes from "./routes/essayRoutes";
 import "./config/firebase"; // Import Firebase configuration
 
 // Load environment variables
@@ -72,6 +73,8 @@ app.get("/", (_req: Request, res: Response) => {
 console.log("Registering routes...");
 app.use("/api/auth", authRoutes);
 console.log("Auth routes registered at /api/auth");
+app.use("/api/essays", essayRoutes);
+console.log("Essay routes registered at /api/essays");
 
 // List all registered routes
 console.log("Registered routes:");
