@@ -10,7 +10,10 @@ import connectDB from "./config/db";
 import passport from "./config/passport";
 import authRoutes from "./routes/authRoutes";
 import essayRoutes from "./routes/essayRoutes";
+import sectionRoutes from "./routes/sectionRoutes";
+import imageRoutes from "./routes/imageRoutes";
 import "./config/firebase"; // Import Firebase configuration
+import path from "path";
 
 // Load environment variables
 dotenv.config();
@@ -30,13 +33,13 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
   })
 );
 console.log(
   "CORS configured with origin:",
-  process.env.CLIENT_URL || "http://localhost:3000"
+  process.env.CLIENT_URL || "http://localhost:5173"
 );
 
 app.use(helmet());
@@ -75,6 +78,13 @@ app.use("/api/auth", authRoutes);
 console.log("Auth routes registered at /api/auth");
 app.use("/api/essays", essayRoutes);
 console.log("Essay routes registered at /api/essays");
+app.use("/api/sections", sectionRoutes);
+console.log("Section routes registered at /api/sections");
+app.use("/api/images", imageRoutes);
+console.log("Image routes registered at /api/images");
+
+// Serve static files from the uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // List all registered routes
 console.log("Registered routes:");

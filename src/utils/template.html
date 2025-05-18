@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>[title]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-color: #0a0a0a;
+        --text-color: #f5f5f5;
+        --accent-color: #e2c07c;
+        --overlay-color: rgba(0, 0, 0, 0.65);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        overflow-x: hidden;
+      }
+
+      .smooth-wrapper {
+        position: relative;
+      }
+
+      .smooth-content {
+        position: relative;
+      }
+
+      header {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        background-color: var(--bg-color);
+      }
+
+      h1 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(3rem, 10vw, 8rem);
+        font-weight: 700;
+        margin-bottom: 2rem;
+        opacity: 0;
+        z-index: 2;
+        text-shadow: 0 2px 15px rgba(0, 0, 0, 0.7);
+      }
+
+      .scroll-indicator {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        z-index: 2;
+      }
+
+      .scroll-indicator::after {
+        content: "↓";
+        font-size: 2rem;
+        animation: bounce 2s infinite;
+      }
+
+      @keyframes bounce {
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-20px);
+        }
+        60% {
+          transform: translateY(-10px);
+        }
+      }
+
+      section {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 4rem 2rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .bg-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--overlay-color);
+        z-index: 1;
+      }
+
+      .quote {
+        max-width: 800px;
+        font-family: "Playfair Display", serif;
+        font-size: clamp(1.5rem, 4vw, 3rem);
+        line-height: 1.4;
+        opacity: 0;
+        position: relative;
+        z-index: 2;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+        padding: 2rem;
+        backdrop-filter: blur(3px);
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        width: 100%;
+        white-space: normal;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .quote .line {
+        width: 100%;
+        display: block;
+        margin-bottom: 1rem;
+        white-space: normal;
+      }
+
+      .quote span {
+        display: inline-block;
+      }
+
+      .quote .word {
+        display: inline-block;
+        margin-right: 0.25rem;
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      .highlight {
+        color: var(--accent-color);
+      }
+
+      .parallax-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+        transform: scale(1.1);
+      }
+
+      .final-section {
+        text-align: center;
+      }
+
+      .final-quote {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: clamp(1.5rem, 3vw, 2.5rem);
+        max-width: 800px;
+        margin: 0 auto;
+        opacity: 0;
+      }
+
+      .credits {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 0.8rem;
+        opacity: 0.5;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="smooth-wrapper">
+      <div class="smooth-content">
+        <header>
+          <h1>[title]</h1>
+          <div class="scroll-indicator"></div>
+        </header>
+
+        <section class="section-1">
+          <div class="parallax-bg" id="bg-1"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-1">
+            <div class="line"></div>
+          </div>
+        </section>
+
+        <section class="section-2">
+          <div class="parallax-bg" id="bg-2"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-2">
+            <div class="line"></div>
+          </div>
+        </section>
+
+        <section class="section-3">
+          <div class="parallax-bg" id="bg-3"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-3">
+            <div class="line"></div>
+          </div>
+        </section>
+
+        <section class="section-4">
+          <div class="parallax-bg" id="bg-4"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-4">
+            <div class="line"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-5">
+          <div class="parallax-bg" id="bg-5"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-5">
+            <div class="line"></div>
+          </div>
+        </section>
+
+        <section class="section-6">
+          <div class="parallax-bg" id="bg-6"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-6">
+            <div class="line"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-7">
+          <div class="parallax-bg" id="bg-7"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-7">
+            <div class="line"></div>
+          </div>
+        </section>
+
+        <section class="section-8">
+          <div class="parallax-bg" id="bg-8"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-8">
+            <div class="line"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-9">
+          <div class="parallax-bg" id="bg-9"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-9">
+            <div class="line"></div>
+
+          </div>
+        </section>
+
+        <section class="section-10">
+          <div class="parallax-bg" id="bg-10"></div>
+          <div class="bg-overlay"></div>
+          <div class="quote quote-10">
+            <div class="line"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="credits">Scrollytelling Experience</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+    <script src="https://unpkg.com/gsap@3/dist/ScrollSmoother.min.js"></script>
+    <script src="https://unpkg.com/split-type"></script>
+
+    <script>
+      // Wait for DOM to be fully loaded
+      document.addEventListener("DOMContentLoaded", () => {
+        // Register GSAP plugins
+        gsap.registerPlugin(ScrollTrigger, ScrollSmoother, ScrollToPlugin);
+
+        // Initialize smooth scrolling
+        const smoother = ScrollSmoother.create({
+          wrapper: ".smooth-wrapper",
+          content: ".smooth-content",
+          smooth: 1.5,
+          effects: true,
+        });
+
+        // Set background images
+        const backgroundImages = {
+          "bg-1":
+            "https://images.stockcake.com/public/4/4/4/4442db9a-b106-454d-aacb-69cf3eb776a1_large/friends-enjoying-beer-stockcake.jpg",
+          "bg-2":
+            "https://images.stockcake.com/public/2/4/3/243f1115-56ac-4dc0-9723-d33a17e25044_large/joyful-dance-moment-stockcake.jpg",
+          "bg-3":
+            "https://images.stockcake.com/public/3/b/c/3bc007ac-3828-442a-9146-371c30467631_large/couple-enjoying-autumn-stockcake.jpg",
+          "bg-4":
+            "https://images.stockcake.com/public/3/9/7/397d50bd-f805-4a33-bb8c-a6fbb0a71462_large/energetic-dance-party-stockcake.jpg",
+          "bg-5":
+            "https://images.stockcake.com/public/4/1/c/41ce392f-1df6-4b07-8d22-19148f104e44_large/sunset-beach-romance-stockcake.jpg",
+          "bg-6":
+            "https://images.stockcake.com/public/a/b/b/abbf4c90-e973-4b40-ac6b-8242c4f1aa52_large/sunlit-vintage-linens-stockcake.jpg",
+          "bg-7":
+            "https://images.stockcake.com/public/1/0/7/107df0bc-18af-466a-a6b5-5157f1a80236_large/bustling-diner-evening-stockcake.jpg",
+          "bg-8":
+            "https://images.stockcake.com/public/c/2/d/c2dcc8dd-9d61-4137-9909-90523d00484c_large/nighttime-taxi-journey-stockcake.jpg",
+          "bg-9":
+            "https://images.stockcake.com/public/c/f/b/cfb29056-1818-49f1-b0ae-bc81340f8d86_large/love-in-light-stockcake.jpg",
+          "bg-10":
+            "https://images.stockcake.com/public/d/2/1/d2144f28-70e6-426f-aa0b-0bbde7905a22_large/love-under-lights-stockcake.jpg",
+        };
+
+        // Apply background images
+        for (const [id, url] of Object.entries(backgroundImages)) {
+          const element = document.getElementById(id);
+          if (element) {
+            element.style.backgroundImage = `url(${url})`;
+          }
+        }
+
+        // Split text for animation
+        const splitQuotes = document.querySelectorAll(".quote");
+        splitQuotes.forEach((quote) => {
+          // Update the selector for SplitType to target lines instead of entire quote
+          const lines = quote.querySelectorAll(".line");
+          lines.forEach((line) => {
+            new SplitType(line, { types: "words" });
+
+            // Prepare text for animation by setting initial state
+            const words = line.querySelectorAll(".word");
+            gsap.set(words, {
+              opacity: 0,
+              y: 20,
+            });
+          });
+        });
+
+        // Header animations
+        gsap.to("h1", {
+          opacity: 1,
+          y: 0,
+          duration: 1.5,
+          ease: "power3.out",
+        });
+
+        gsap.to(".scroll-indicator", {
+          opacity: 1,
+          duration: 1,
+          delay: 1.5,
+          ease: "power3.out",
+        });
+
+        // Section animations
+        const sections = document.querySelectorAll("section");
+        sections.forEach((section, index) => {
+          const quote = section.querySelector(".quote");
+          const bg = section.querySelector(".parallax-bg");
+
+          // Create animation for background entry
+          gsap.fromTo(
+            bg,
+            {
+              scale: 1.2,
+              opacity: 0,
+            },
+            {
+              scale: 1.1,
+              opacity: 1,
+              duration: 1.2,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: section,
+                start: "top bottom",
+                end: "top top",
+                scrub: 0.5,
+              },
+            }
+          );
+
+          // Create parallax effect
+          gsap.fromTo(
+            bg,
+            {
+              y: "-5%",
+            },
+            {
+              y: "5%",
+              ease: "none",
+              scrollTrigger: {
+                trigger: section,
+                start: "top bottom",
+                end: "bottom top",
+                scrub: true,
+              },
+            }
+          );
+
+          if (quote) {
+            // Create animation for each quote
+            ScrollTrigger.create({
+              trigger: section,
+              start: "top 80%",
+              end: "bottom 20%",
+              onEnter: () => {
+                // First make the container visible
+                gsap.to(quote, {
+                  opacity: 1,
+                  duration: 0.5,
+                  ease: "power3.out",
+                });
+
+                // Then animate each word
+                const words = quote.querySelectorAll(".word");
+                gsap.to(words, {
+                  opacity: 1,
+                  y: 0,
+                  stagger: 0.03,
+                  duration: 0.5,
+                  ease: "power3.out",
+                });
+              },
+              onLeaveBack: () => {
+                gsap.to(quote, {
+                  opacity: 0,
+                  duration: 0.5,
+                  ease: "power3.out",
+                });
+              },
+            });
+          }
+
+          // Create cross-fade effect between sections
+          if (index < sections.length - 1) {
+            ScrollTrigger.create({
+              trigger: section,
+              start: "bottom 80%",
+              end: "bottom top",
+              onEnter: () => {
+                gsap.to(bg, {
+                  opacity: 0,
+                  duration: 1,
+                  ease: "power2.inOut",
+                });
+              },
+              onLeaveBack: () => {
+                gsap.to(bg, {
+                  opacity: 1,
+                  duration: 1,
+                  ease: "power2.inOut",
+                });
+              },
+            });
+          }
+        });
+
+        // Add a subtle zoom effect on scroll
+        smoother.effects(".parallax-bg", { speed: 0.8 });
+      });
+    </script>
+  </body>
+</html>
