@@ -24,7 +24,7 @@ export interface ImageSearchRequest {
 const wait = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-// Function to get image URLs based on a prompt
+// Function to get image URLs from Lummi based on a prompt
 export async function getImageUrls(
   prompt: string,
   maxImages: number = 10
@@ -32,7 +32,7 @@ export async function getImageUrls(
   console.log(`Searching for images with prompt: "${prompt}"`);
 
   const encodedPrompt: string = encodeURIComponent(prompt);
-  const searchUrl: string = `https://stockcake.com/s?q=${encodedPrompt}`;
+  const searchUrl: string = `https://www.lummi.ai/s/photo/${encodedPrompt}`;
   console.log(`URL: ${searchUrl}`);
 
   const browser = await puppeteer.launch({
@@ -60,71 +60,117 @@ export async function getImageUrls(
     // Wait for page to fully render
     await wait(5000);
 
-    // Get all image src URLs
-    console.log("Extracting all image URLs from the page...");
-    const imageUrls = await page.evaluate(() => {
-      const images = Array.from(document.querySelectorAll("img"));
-      return images
-        .map((img) => {
-          return {
-            src: img.src,
-            alt: img.alt || "",
-            width: img.width,
-            height: img.height,
-            class: img.className || "",
-          };
-        })
-        .filter((img) => img.src);
-    });
+    console.log("Extracting image URLs from Lummi...");
 
-    console.log(`Found ${imageUrls.length} total images on the page`);
+    let lummiImages: string[] = [];
+    let attempts = 0;
+    const maxAttempts = 5;
 
-    // Filter for stockcake images with flexible patterns
-    let stockcakeImages = imageUrls
-      .filter(
-        (img: ImageInfo) =>
-          img.src.includes("stockcake.com") &&
-          img.src.includes(".jpg") &&
-          img.width > 100 &&
-          img.height > 100 // Filter out thumbnails/icons
-      )
-      .map((img: ImageInfo) => img.src);
-
-    console.log(`Found ${stockcakeImages.length} matching stockcake images`);
-
-    // Try an alternative method if no images found
-    if (stockcakeImages.length === 0) {
+    // Keep trying until we get enough images or reach max attempts
+    while (lummiImages.length < maxImages && attempts < maxAttempts) {
+      attempts++;
       console.log(
-        "No stockcake images found with primary method. Trying alternative approach..."
+        `Attempt ${attempts} - Currently found ${lummiImages.length} images`
       );
 
-      // Get all links and look for image URLs in href attributes
-      const imageLinks = await page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll("a"));
-        return links
-          .map((link) => link.href)
+      // Extract images from the current page state
+      const currentImages = await page.evaluate(() => {
+        // Look for image containers with the specific structure
+        const imageContainers = Array.from(
+          document.querySelectorAll("div.h-min.w-auto.relative.z-10")
+        );
+
+        return imageContainers
+          .map((container) => {
+            const img = container.querySelector("img");
+            const link = container.querySelector("a");
+
+            if (!img || !img.src) return null;
+
+            // Check if this is a pro image by looking for pro URL patterns
+            const isPro =
+              img.src.includes("/api/pro/") ||
+              link?.href.includes("/pro/") ||
+              container.querySelector("[data-pro]") !== null;
+
+            if (isPro) return null;
+
+            return {
+              src: img.src,
+              alt: img.alt || "",
+              href: link?.href || "",
+            };
+          })
           .filter(
-            (href) =>
-              href &&
-              href.includes("stockcake.com") &&
-              (href.includes(".jpg") || href.includes("/public/"))
-          );
+            (item): item is { src: string; alt: string; href: string } =>
+              item !== null
+          )
+          .map((item) => item.src);
       });
 
-      console.log(`Found ${imageLinks.length} potential image links`);
+      // Add new unique images
+      const newImages = currentImages.filter(
+        (src: string) => !lummiImages.includes(src)
+      );
+      lummiImages.push(...newImages);
 
-      if (imageLinks.length > 0) {
-        stockcakeImages.push(...imageLinks);
+      console.log(
+        `Found ${newImages.length} new images in attempt ${attempts}`
+      );
+
+      // If we have enough images, break
+      if (lummiImages.length >= maxImages) {
+        break;
       }
+
+      // Scroll down to load more images
+      await page.evaluate(() => {
+        window.scrollBy(0, window.innerHeight);
+      });
+
+      // Wait for new content to load
+      await wait(3000);
+    }
+
+    // Alternative method if we still don't have enough images
+    if (lummiImages.length < maxImages) {
+      console.log("Trying alternative extraction method...");
+
+      const altImages = await page.evaluate(() => {
+        // Look for any img tags with lummi.ai URLs that aren't pro
+        const allImages = Array.from(document.querySelectorAll("img"));
+
+        return allImages
+          .filter(
+            (img) =>
+              img.src &&
+              img.src.includes("lummi.ai") &&
+              !img.src.includes("/api/pro/") &&
+              img.src.includes("?asset=original")
+          )
+          .map((img) => img.src);
+      });
+
+      // Add unique images from alternative method
+      const newAltImages = altImages.filter(
+        (src: string) => !lummiImages.includes(src)
+      );
+      lummiImages.push(...newAltImages);
+
+      console.log(
+        `Alternative method found ${newAltImages.length} additional images`
+      );
     }
 
     // Limit to maxImages URLs
-    stockcakeImages = stockcakeImages.slice(0, maxImages);
+    lummiImages = lummiImages.slice(0, maxImages);
+
+    console.log(`Final result: ${lummiImages.length} images found`);
 
     return {
       success: true,
-      message: `Found ${stockcakeImages.length} image URLs`,
-      urls: stockcakeImages,
+      message: `Found ${lummiImages.length} image URLs from Lummi`,
+      urls: lummiImages,
     };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

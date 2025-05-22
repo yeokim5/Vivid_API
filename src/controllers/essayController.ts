@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import Essay, { IEssay } from "../models/Essay";
 import { AuthRequest } from "../types";
+import path from "path";
+import { generateHtmlFromTemplate } from "../utils/replace";
 
 // Create a new essay
 export const createEssay = async (
@@ -186,5 +188,138 @@ export const deleteEssay = async (
   } catch (error) {
     console.error("Delete essay error:", error);
     res.status(500).json({ message: "Failed to delete essay" });
+  }
+};
+
+// Create HTML essay
+export const createHtmlEssay = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { title, content } = req.body;
+
+    if (!req.user) {
+      res.status(401).json({ message: "Not authenticated" });
+      return;
+    }
+
+    if (!content || !title) {
+      res.status(400).json({ message: "Content and title are required" });
+      return;
+    }
+
+    // Transform the content to match the expected format
+    const contentData = {
+      title,
+      ...content.sections.reduce((acc: any, section: any, index: number) => {
+        const sectionNum = index + 1;
+        return {
+          ...acc,
+          [`section${sectionNum}`]: section.content,
+          [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+        };
+      }, {})
+    };
+
+    // Generate HTML from the template
+    const templatePath = path.join(__dirname, "../utils/template.html");
+    const htmlContent = generateHtmlFromTemplate(contentData, templatePath);
+
+    // Create new essay with HTML content
+    const essay = await Essay.create({
+      title,
+      content: JSON.stringify(content), // Store the raw content as JSON string
+      htmlContent, // Store the generated HTML
+      author: req.user.id || req.user._id,
+      isPublished: true, // Set as published by default for HTML essays
+      tags: ["html-essay"],
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "HTML essay created successfully",
+      essayId: essay._id,
+      viewUrl: `/api/essays/${essay._id}/render`, // URL to view the rendered HTML
+    });
+  } catch (error) {
+    console.error("Create HTML essay error:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to create HTML essay" 
+    });
+  }
+};
+
+// Render HTML essay by ID
+export const renderEssayById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const essay = await Essay.findById(id);
+
+    if (!essay) {
+      res.status(404).json({ message: "Essay not found" });
+      return;
+    }
+
+    let htmlContent = essay.htmlContent;
+
+    // If htmlContent doesn't exist, generate it from the content
+    if (!htmlContent) {
+      try {
+        const contentData = {
+          title: essay.title,
+          ...JSON.parse(essay.content).sections.reduce((acc: any, section: any, index: number) => {
+            const sectionNum = index + 1;
+            return {
+              ...acc,
+              [`section${sectionNum}`]: section.content,
+              [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+            };
+          }, {})
+        };
+
+        // Generate HTML from the template
+        const templatePath = path.join(__dirname, "../utils/template.html");
+        htmlContent = generateHtmlFromTemplate(contentData, templatePath);
+
+        // Save the generated HTML content
+        essay.htmlContent = htmlContent;
+        await essay.save();
+      } catch (error) {
+        console.error("Error generating HTML content:", error);
+        res.status(500).json({ message: "Failed to generate HTML content" });
+        return;
+      }
+    }
+
+    // Increment view count
+    essay.views += 1;
+    await essay.save();
+
+    // Set Content Security Policy headers
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "img-src 'self' data: https: blob: https://assets.lummi.ai https://images.stockcake.com https://*.stockcake.com; " +
+      "connect-src 'self' https://api.unsplash.com https://assets.lummi.ai https://fonts.googleapis.com https://fonts.gstatic.com; " +
+      "font-src 'self' data: https: https://fonts.gstatic.com; " +
+      "object-src 'none'; " +
+      "media-src 'self'; " +
+      "frame-src 'self';"
+    );
+    
+    // Send HTML directly
+    res.setHeader("Content-Type", "text/html");
+    res.send(htmlContent);
+  } catch (error) {
+    console.error("Render essay error:", error);
+    res.status(500).json({ message: "Failed to render essay" });
   }
 };

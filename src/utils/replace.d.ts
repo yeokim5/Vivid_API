@@ -1,0 +1,1 @@
+export function generateHtmlFromTemplate(content: any, templatePath: string): string; 

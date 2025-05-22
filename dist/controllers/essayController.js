@@ -3,14 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHtmlEssay = exports.renderEssayById = exports.deleteEssay = exports.updateEssay = exports.getEssayById = exports.getUserEssays = exports.createEssay = void 0;
+exports.renderEssayById = exports.createHtmlEssay = exports.deleteEssay = exports.updateEssay = exports.getEssayById = exports.getUserEssays = exports.createEssay = void 0;
 const Essay_1 = __importDefault(require("../models/Essay"));
 const path_1 = __importDefault(require("path"));
 const replace_1 = require("../utils/replace");
 // Create a new essay
 const createEssay = async (req, res) => {
     try {
-        const { title, content, htmlContent, tags } = req.body;
+        const { title, content, tags } = req.body;
         if (!title || !content) {
             res.status(400).json({ message: "Title and content are required" });
             return;
@@ -24,7 +24,6 @@ const createEssay = async (req, res) => {
         const essay = await Essay_1.default.create({
             title,
             content,
-            htmlContent,
             author: req.user.id || req.user._id,
             tags: tags || [],
         });
@@ -34,7 +33,6 @@ const createEssay = async (req, res) => {
                 id: essay._id,
                 title: essay.title,
                 content: essay.content,
-                htmlContent: essay.htmlContent,
                 tags: essay.tags,
             },
         });
@@ -91,7 +89,7 @@ exports.getEssayById = getEssayById;
 const updateEssay = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, content, htmlContent, isPublished, tags } = req.body;
+        const { title, content, isPublished, tags } = req.body;
         // Ensure user is authenticated
         if (!req.user) {
             res.status(401).json({ message: "Not authenticated" });
@@ -113,8 +111,6 @@ const updateEssay = async (req, res) => {
             essay.title = title;
         if (content)
             essay.content = content;
-        if (htmlContent !== undefined)
-            essay.htmlContent = htmlContent;
         if (tags)
             essay.tags = tags;
         if (isPublished !== undefined)
@@ -126,7 +122,6 @@ const updateEssay = async (req, res) => {
                 id: essay._id,
                 title: essay.title,
                 content: essay.content,
-                htmlContent: essay.htmlContent,
                 isPublished: essay.isPublished,
                 tags: essay.tags,
             },
@@ -167,6 +162,58 @@ const deleteEssay = async (req, res) => {
     }
 };
 exports.deleteEssay = deleteEssay;
+// Create HTML essay
+const createHtmlEssay = async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        if (!req.user) {
+            res.status(401).json({ message: "Not authenticated" });
+            return;
+        }
+        if (!content || !title) {
+            res.status(400).json({ message: "Content and title are required" });
+            return;
+        }
+        // Transform the content to match the expected format
+        const contentData = {
+            title,
+            ...content.sections.reduce((acc, section, index) => {
+                const sectionNum = index + 1;
+                return {
+                    ...acc,
+                    [`section${sectionNum}`]: section.content,
+                    [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+                };
+            }, {})
+        };
+        // Generate HTML from the template
+        const templatePath = path_1.default.join(__dirname, "../utils/template.html");
+        const htmlContent = (0, replace_1.generateHtmlFromTemplate)(contentData, templatePath);
+        // Create new essay with HTML content
+        const essay = await Essay_1.default.create({
+            title,
+            content: JSON.stringify(content), // Store the raw content as JSON string
+            htmlContent, // Store the generated HTML
+            author: req.user.id || req.user._id,
+            isPublished: true, // Set as published by default for HTML essays
+            tags: ["html-essay"],
+        });
+        res.status(201).json({
+            success: true,
+            message: "HTML essay created successfully",
+            essayId: essay._id,
+            viewUrl: `/api/essays/${essay._id}/render`, // URL to view the rendered HTML
+        });
+    }
+    catch (error) {
+        console.error("Create HTML essay error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create HTML essay"
+        });
+    }
+};
+exports.createHtmlEssay = createHtmlEssay;
 // Render HTML essay by ID
 const renderEssayById = async (req, res) => {
     try {
@@ -177,9 +224,7 @@ const renderEssayById = async (req, res) => {
             return;
         }
         if (!essay.htmlContent) {
-            res
-                .status(404)
-                .json({ message: "HTML content not found for this essay" });
+            res.status(404).json({ message: "HTML content not found for this essay" });
             return;
         }
         // Increment view count
@@ -195,42 +240,3 @@ const renderEssayById = async (req, res) => {
     }
 };
 exports.renderEssayById = renderEssayById;
-// Create HTML essay
-const createHtmlEssay = async (req, res) => {
-    try {
-        const { title, content } = req.body;
-        if (!req.user) {
-            res.status(401).json({ message: "Not authenticated" });
-            return;
-        }
-        if (!content || !title) {
-            res.status(400).json({ message: "Content and title are required" });
-            return;
-        }
-        // Generate HTML from the template
-        const templatePath = path_1.default.join(__dirname, "../utils/template.html");
-        const htmlContent = (0, replace_1.generateHtmlFromTemplate)(content, templatePath);
-        // Create new essay with HTML content
-        const essay = await Essay_1.default.create({
-            title,
-            content: JSON.stringify(content), // Store the raw content as JSON string
-            htmlContent, // Store the generated HTML
-            author: req.user.id || req.user._id,
-            isPublished: true, // Set as published by default for HTML essays
-            tags: ["html-essay"],
-        });
-        res.status(201).json({
-            message: "HTML essay created successfully",
-            essay: {
-                id: essay._id,
-                title: essay.title,
-            },
-            viewUrl: `/api/essays/${essay._id}/render`, // URL to view the rendered HTML
-        });
-    }
-    catch (error) {
-        console.error("Create HTML essay error:", error);
-        res.status(500).json({ message: "Failed to create HTML essay" });
-    }
-};
-exports.createHtmlEssay = createHtmlEssay;

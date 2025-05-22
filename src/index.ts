@@ -33,16 +33,35 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true,
   })
 );
 console.log(
   "CORS configured with origin:",
-  process.env.CLIENT_URL || "http://localhost:5173"
+  process.env.CLIENT_URL || "http://localhost:3000"
 );
 
-app.use(helmet());
+// Configure Helmet with CSP
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:", "https://assets.lummi.ai"],
+        connectSrc: ["'self'", "https://api.unsplash.com", "https://assets.lummi.ai", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        fontSrc: ["'self'", "data:", "https:", "https://fonts.gstatic.com"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'self'"],
+      },
+    },
+  })
+);
+
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

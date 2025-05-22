@@ -31,16 +31,14 @@ console.log("PORT:", process.env.PORT || 5000);
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true,
 }));
-console.log("CORS configured with origin:", process.env.CLIENT_URL || "http://localhost:5173");
-app.use((0, helmet_1.default)({
-    contentSecurityPolicy: false, // Disable for HTML content rendering
-}));
+console.log("CORS configured with origin:", process.env.CLIENT_URL || "http://localhost:3000");
+app.use((0, helmet_1.default)());
 app.use((0, morgan_1.default)("dev"));
-app.use(express_1.default.json({ limit: "10mb" })); // Increase limit for HTML content
-app.use(express_1.default.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
 // Session configuration
 app.use((0, express_session_1.default)({
@@ -61,10 +59,6 @@ console.log("Passport initialized");
 app.get("/", (_req, res) => {
     res.json({ message: "Welcome to MagicEssay API" });
 });
-// Serve static files from the uploads directory
-app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
-// Serve the template.html file
-app.use("/templates", express_1.default.static(path_1.default.join(__dirname, "utils")));
 // Routes
 console.log("Registering routes...");
 app.use("/api/auth", authRoutes_1.default);
@@ -75,6 +69,8 @@ app.use("/api/sections", sectionRoutes_1.default);
 console.log("Section routes registered at /api/sections");
 app.use("/api/images", imageRoutes_1.default);
 console.log("Image routes registered at /api/images");
+// Serve static files from the uploads directory
+app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
 // List all registered routes
 console.log("Registered routes:");
 app._router.stack.forEach((middleware) => {

@@ -4,11 +4,11 @@ exports.getImageUrls = getImageUrls;
 const puppeteer = require("puppeteer");
 // Helper function to wait
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-// Function to get image URLs based on a prompt
+// Function to get image URLs from Lummi based on a prompt
 async function getImageUrls(prompt, maxImages = 10) {
     console.log(`Searching for images with prompt: "${prompt}"`);
     const encodedPrompt = encodeURIComponent(prompt);
-    const searchUrl = `https://stockcake.com/s?q=${encodedPrompt}`;
+    const searchUrl = `https://www.lummi.ai/s/photo/${encodedPrompt}`;
     console.log(`URL: ${searchUrl}`);
     const browser = await puppeteer.launch({
         headless: true, // Run in headless mode for API use
@@ -27,55 +27,79 @@ async function getImageUrls(prompt, maxImages = 10) {
         });
         // Wait for page to fully render
         await wait(5000);
-        // Get all image src URLs
-        console.log("Extracting all image URLs from the page...");
-        const imageUrls = await page.evaluate(() => {
-            const images = Array.from(document.querySelectorAll("img"));
-            return images
-                .map((img) => {
-                return {
-                    src: img.src,
-                    alt: img.alt || "",
-                    width: img.width,
-                    height: img.height,
-                    class: img.className || "",
-                };
-            })
-                .filter((img) => img.src);
-        });
-        console.log(`Found ${imageUrls.length} total images on the page`);
-        // Filter for stockcake images with flexible patterns
-        let stockcakeImages = imageUrls
-            .filter((img) => img.src.includes("stockcake.com") &&
-            img.src.includes(".jpg") &&
-            img.width > 100 &&
-            img.height > 100 // Filter out thumbnails/icons
-        )
-            .map((img) => img.src);
-        console.log(`Found ${stockcakeImages.length} matching stockcake images`);
-        // Try an alternative method if no images found
-        if (stockcakeImages.length === 0) {
-            console.log("No stockcake images found with primary method. Trying alternative approach...");
-            // Get all links and look for image URLs in href attributes
-            const imageLinks = await page.evaluate(() => {
-                const links = Array.from(document.querySelectorAll("a"));
-                return links
-                    .map((link) => link.href)
-                    .filter((href) => href &&
-                    href.includes("stockcake.com") &&
-                    (href.includes(".jpg") || href.includes("/public/")));
+        console.log("Extracting image URLs from Lummi...");
+        let lummiImages = [];
+        let attempts = 0;
+        const maxAttempts = 5;
+        // Keep trying until we get enough images or reach max attempts
+        while (lummiImages.length < maxImages && attempts < maxAttempts) {
+            attempts++;
+            console.log(`Attempt ${attempts} - Currently found ${lummiImages.length} images`);
+            // Extract images from the current page state
+            const currentImages = await page.evaluate(() => {
+                // Look for image containers with the specific structure
+                const imageContainers = Array.from(document.querySelectorAll("div.h-min.w-auto.relative.z-10"));
+                return imageContainers
+                    .map((container) => {
+                    const img = container.querySelector("img");
+                    const link = container.querySelector("a");
+                    if (!img || !img.src)
+                        return null;
+                    // Check if this is a pro image by looking for pro URL patterns
+                    const isPro = img.src.includes("/api/pro/") ||
+                        link?.href.includes("/pro/") ||
+                        container.querySelector("[data-pro]") !== null;
+                    if (isPro)
+                        return null;
+                    return {
+                        src: img.src,
+                        alt: img.alt || "",
+                        href: link?.href || "",
+                    };
+                })
+                    .filter((item) => item !== null)
+                    .map((item) => item.src);
             });
-            console.log(`Found ${imageLinks.length} potential image links`);
-            if (imageLinks.length > 0) {
-                stockcakeImages.push(...imageLinks);
+            // Add new unique images
+            const newImages = currentImages.filter((src) => !lummiImages.includes(src));
+            lummiImages.push(...newImages);
+            console.log(`Found ${newImages.length} new images in attempt ${attempts}`);
+            // If we have enough images, break
+            if (lummiImages.length >= maxImages) {
+                break;
             }
+            // Scroll down to load more images
+            await page.evaluate(() => {
+                window.scrollBy(0, window.innerHeight);
+            });
+            // Wait for new content to load
+            await wait(3000);
+        }
+        // Alternative method if we still don't have enough images
+        if (lummiImages.length < maxImages) {
+            console.log("Trying alternative extraction method...");
+            const altImages = await page.evaluate(() => {
+                // Look for any img tags with lummi.ai URLs that aren't pro
+                const allImages = Array.from(document.querySelectorAll("img"));
+                return allImages
+                    .filter((img) => img.src &&
+                    img.src.includes("lummi.ai") &&
+                    !img.src.includes("/api/pro/") &&
+                    img.src.includes("?asset=original"))
+                    .map((img) => img.src);
+            });
+            // Add unique images from alternative method
+            const newAltImages = altImages.filter((src) => !lummiImages.includes(src));
+            lummiImages.push(...newAltImages);
+            console.log(`Alternative method found ${newAltImages.length} additional images`);
         }
         // Limit to maxImages URLs
-        stockcakeImages = stockcakeImages.slice(0, maxImages);
+        lummiImages = lummiImages.slice(0, maxImages);
+        console.log(`Final result: ${lummiImages.length} images found`);
         return {
             success: true,
-            message: `Found ${stockcakeImages.length} image URLs`,
-            urls: stockcakeImages,
+            message: `Found ${lummiImages.length} image URLs from Lummi`,
+            urls: lummiImages,
         };
     }
     catch (error) {

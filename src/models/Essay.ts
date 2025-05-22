@@ -4,6 +4,7 @@ export interface IEssay extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
   content: string;
+  htmlContent?: string;
   author: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +22,10 @@ const EssaySchema = new Schema<IEssay>(
     content: {
       type: String,
       required: true,
+    },
+    htmlContent: {
+      type: String,
+      default: null,
     },
     author: {
       type: Schema.Types.ObjectId,
