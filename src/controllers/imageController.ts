@@ -1,9 +1,23 @@
 import { Request, Response } from "express";
-import { getImageUrls } from "../utils/image_getter";
+import { getImageUrls, cleanup } from "../utils/image_getter";
+
+// Cache to store ongoing image fetches
+const ongoingFetches: Map<string, Promise<any>> = new Map();
+
+// Handle cleanup on server shutdown
+process.on('SIGTERM', async () => {
+  await cleanup();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  await cleanup();
+  process.exit(0);
+});
 
 export const searchImages = async (req: Request, res: Response) => {
   try {
-    const { prompt, maxImages } = req.body;
+    const { prompt, maxImages, sectionId } = req.body;
 
     if (!prompt) {
       return res.status(400).json({
@@ -12,6 +26,27 @@ export const searchImages = async (req: Request, res: Response) => {
       });
     }
 
+    // If this is a sequential fetch request
+    if (sectionId) {
+      const cacheKey = `${prompt}_${sectionId}`;
+      
+      // If there's already a fetch in progress for this section, return it
+      if (ongoingFetches.has(cacheKey)) {
+        const result = await ongoingFetches.get(cacheKey);
+        ongoingFetches.delete(cacheKey);
+        return res.json(result);
+      }
+
+      // Start a new fetch and store it in the cache
+      const fetchPromise = getImageUrls(prompt, maxImages || 10);
+      ongoingFetches.set(cacheKey, fetchPromise);
+      
+      const result = await fetchPromise;
+      ongoingFetches.delete(cacheKey);
+      return res.json(result);
+    }
+
+    // Regular fetch
     const result = await getImageUrls(prompt, maxImages || 10);
     res.json(result);
   } catch (error: unknown) {
