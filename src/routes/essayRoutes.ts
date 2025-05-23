@@ -7,10 +7,15 @@ import {
   updateEssay,
   deleteEssay,
   renderEssayById,
-  createHtmlEssay
+  createHtmlEssay,
+  getAllPublishedEssays,
+  incrementEssayViews
 } from "../controllers/essayController";
 
 const router = express.Router();
+
+// Get all published essays (public route)
+router.get("/", getAllPublishedEssays as unknown as RequestHandler);
 
 // Create a new essay
 router.post("/", verifyToken, createEssay as unknown as RequestHandler);
@@ -20,6 +25,9 @@ router.post("/html", verifyToken, createHtmlEssay as unknown as RequestHandler);
 
 // Get all essays for the authenticated user
 router.get("/user", verifyToken, getUserEssays as unknown as RequestHandler);
+
+// Increment essay views
+router.post("/:id/view", incrementEssayViews as unknown as RequestHandler);
 
 // Render HTML essay by ID (public route)
 router.get("/:id/render", renderEssayById as unknown as RequestHandler);

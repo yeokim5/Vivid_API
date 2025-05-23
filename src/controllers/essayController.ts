@@ -86,12 +86,6 @@ export const getEssayById = async (
       return;
     }
 
-    // Increment view count for published essays
-    if (essay.isPublished) {
-      essay.views += 1;
-      await essay.save();
-    }
-
     res.status(200).json({ essay });
   } catch (error) {
     console.error("Get essay error:", error);
@@ -300,10 +294,6 @@ export const renderEssayById = async (
       }
     }
 
-    // Increment view count
-    essay.views += 1;
-    await essay.save();
-
     // Set Content Security Policy headers
     res.setHeader(
       "Content-Security-Policy",
@@ -325,5 +315,50 @@ export const renderEssayById = async (
   } catch (error) {
     console.error("Render essay error:", error);
     res.status(500).json({ message: "Failed to render essay" });
+  }
+};
+
+// Get all published essays
+export const getAllPublishedEssays = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const essays = await Essay.find({ isPublished: true })
+      .sort({ views: -1 })
+      .select('title subtitle header_background_image author views createdAt')
+      .populate('author', 'name');
+
+    res.status(200).json(essays);
+  } catch (error) {
+    console.error("Get all essays error:", error);
+    res.status(500).json({ message: "Failed to retrieve essays" });
+  }
+};
+
+// Increment essay view count
+export const incrementEssayViews = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const essay = await Essay.findById(id);
+
+    if (!essay) {
+      res.status(404).json({ message: "Essay not found" });
+      return;
+    }
+
+    // Only increment for published essays
+    if (essay.isPublished) {
+      essay.views += 1;
+      await essay.save();
+    }
+
+    res.status(200).json({ views: essay.views });
+  } catch (error) {
+    console.error("Increment views error:", error);
+    res.status(500).json({ message: "Failed to increment views" });
   }
 };

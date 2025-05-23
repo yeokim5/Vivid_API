@@ -183,30 +183,32 @@
       }
 
       .quote {
-        max-width: min(900px, 90vw);
-        font-family: "Playfair Display", serif;
-        font-size: clamp(1.25rem, 3.5vw, 2.5rem);
-        line-height: 1.4;
-        position: relative;
-        z-index: 2;
-        text-shadow: none;
-        padding: clamp(1.5rem, 4vw, 3rem);
-        backdrop-filter: blur(20px) saturate(180%);
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-strong);
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        position: relative;
-        opacity: 0;
-        transform: translateY(20px);
-        transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
-      }
+    max-width: min(900px, 90vw);
+    font-family: "Playfair Display", serif;
+    font-size: clamp(1.25rem, 3.5vw, 2.5rem);
+    line-height: 1.4;
+    position: relative;
+    z-index: 2;
+    text-shadow: none;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    backdrop-filter: blur(10px) saturate(180%);
+    background: rgba(88, 88, 88, 0.5); /* Semi-transparent background */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-strong);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+}
+
+
 
       .quote.visible {
         opacity: 1;
@@ -312,19 +314,60 @@
         position: fixed;
         color: rgba(255, 255, 255, 1);
         bottom: 1rem;
+        right: 4rem;
+        font-size: 1rem;
+        z-index: 10;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 1rem;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        transition: var(--transition-smooth);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5rem;
+        line-height: 1;
+      }
+
+      .credits:hover {
+        opacity: 0.8;
+      }
+
+      .share-button {
+        position: fixed;
+        color: rgba(255, 255, 255, 1);
+        bottom: 1rem;
         right: 1rem;
         font-size: 1rem;
         z-index: 10;
         font-weight: 500;
         letter-spacing: 0.05em;
-        padding: 0.5rem 1rem;
+        padding: 0.75rem;
         background: rgba(0, 0, 0, 0.5);
         border-radius: 20px;
         backdrop-filter: blur(10px);
         transition: var(--transition-smooth);
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        transform: translateY(0);
       }
 
-      .credits:hover {
+      .share-icon {
+        width: 1.2rem;
+        height: 1.2rem;
+        fill: currentColor;
+      }
+
+      .share-button:hover {
         opacity: 0.8;
       }
 
@@ -437,7 +480,7 @@
         </header>
 
         <section class="section-1">
-          <div class="parallax-bg" id="bg-1"></div>
+        <div class="parallax-bg" id="bg-1"></div>
           <div class="bg-overlay"></div>
           <div class="quote quote-1">
             <div class="line"></div>
@@ -518,7 +561,12 @@
       </div>
     </div>
 
-    <a href="http://localhost:3000/"><div class="credits">Make Your Own Essay</div></a>
+    <button class="share-button" onclick="shareCurrentPage()">
+      <svg class="share-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+      </svg>
+    </button>
+    <a href="http://localhost:3000/"><div class="credits">Make Your Own</div></a>
 
     <script>
       setTimeout(() => {
@@ -573,6 +621,22 @@
           }
         });
       });
+    </script>
+    <script>
+      function shareCurrentPage() {
+        if (navigator.share) {
+          navigator.share({
+            title: document.title,
+            url: window.location.href
+          })
+          .catch(error => console.log('Error sharing:', error));
+        } else {
+          // Fallback for browsers that don't support the Web Share API
+          navigator.clipboard.writeText(window.location.href)
+            .then(() => alert('Link copied to clipboard!'))
+            .catch(err => console.error('Failed to copy link:', err));
+        }
+      }
     </script>
   </body>
 </html>
