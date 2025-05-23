@@ -3,6 +3,8 @@ import path from "path";
 
 interface ContentData {
   title: string;
+  subtitle?: string;
+  header_background_image?: string;
   section1?: string;
   section1_image_url?: string;
   section2?: string;
@@ -67,13 +69,15 @@ export function generateHtmlFromTemplate(contentData: ContentData, templatePath:
       </section>`
     );
 
-    // Replace the title
+    // Replace the title and subtitle
     htmlTemplate = htmlTemplate.replace(/\[title\]/gi, contentData.title);
+    htmlTemplate = htmlTemplate.replace(/\[subtitle\]/gi, contentData.subtitle || "");
 
     // Update the background images in the JavaScript section
     const backgroundImagesScript = `
     // Set background images
     const backgroundImages = {
+      "header-bg": "${contentData.header_background_image || ''}",
       "bg-1": "${contentData.section1_image_url || ''}",
       "bg-2": "${contentData.section2_image_url || ''}",
       "bg-3": "${contentData.section3_image_url || ''}",
@@ -89,7 +93,7 @@ export function generateHtmlFromTemplate(contentData: ContentData, templatePath:
     // Apply background images to sections
     document.addEventListener('DOMContentLoaded', () => {
       Object.entries(backgroundImages).forEach(([id, url]) => {
-        if (url) {
+        if (url && url.startsWith('http')) {  // Only apply if it's a valid URL
           const element = document.getElementById(id);
           if (element) {
             element.style.backgroundImage = \`url('\${url}')\`;

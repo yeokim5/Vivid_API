@@ -37,11 +37,11 @@ export async function generateBackgroundImages(
         {
           role: "system",
           content:
-            "You are an assistant that suggests appropriate background images for content sections. Return your suggestions in JSON format only.",
+            "You are an assistant that suggests appropriate background images for content sections and generates a subtitle for the essay. Return your suggestions in JSON format only.",
         },
         {
           role: "user",
-          content: `For each of the following sections, suggest an appropriate background image that matches the mood and enhances the content of that section.
+          content: `For the following essay, first generate a compelling subtitle that captures the essence of the content, and then suggest appropriate background images for each section.
 
 Title: ${content.title}
 
@@ -49,6 +49,8 @@ ${sectionsInput}
 
 Format your response as a valid JSON object like this:
 {
+  "subtitle": "A compelling subtitle that captures the essence of the essay",
+  "header_background_image": "description of an appropriate background image for the header section",
   "section_1_background_image": "description of appropriate background image",
   "section_2_background_image": "description of appropriate background image",
   ...and so on for all sections
@@ -67,7 +69,21 @@ Only return the JSON object, nothing else.`,
     console.log("\n=== Background Image Suggestions ===\n");
     console.log(backgroundImagesJSON);
 
-    return backgroundImagesJSON;
+    // Parse and clean the response
+    let parsedResponse: Record<string, string>;
+    try {
+      parsedResponse = JSON.parse(backgroundImagesJSON);
+      // Remove quotes from all values
+      Object.keys(parsedResponse).forEach(key => {
+        if (typeof parsedResponse[key] === 'string') {
+          parsedResponse[key] = parsedResponse[key].replace(/^"|"$/g, '');
+        }
+      });
+      return parsedResponse;
+    } catch (e) {
+      console.error("Error parsing background images:", e);
+      return JSON.stringify({ error: "Failed to generate background images" });
+    }
   } catch (error) {
     console.error("Error:", error);
     return JSON.stringify({ error: "Failed to generate background images" });

@@ -197,7 +197,7 @@ export const createHtmlEssay = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, content } = req.body;
+    const { title, subtitle, header_background_image, content } = req.body;
 
     if (!req.user) {
       res.status(401).json({ message: "Not authenticated" });
@@ -212,6 +212,8 @@ export const createHtmlEssay = async (
     // Transform the content to match the expected format
     const contentData = {
       title,
+      subtitle: subtitle || "",
+      header_background_image: header_background_image || "",
       ...content.sections.reduce((acc: any, section: any, index: number) => {
         const sectionNum = index + 1;
         return {
@@ -229,6 +231,8 @@ export const createHtmlEssay = async (
     // Create new essay with HTML content
     const essay = await Essay.create({
       title,
+      subtitle: subtitle || "",
+      header_background_image: header_background_image || "",
       content: JSON.stringify(content), // Store the raw content as JSON string
       htmlContent, // Store the generated HTML
       author: req.user.id || req.user._id,

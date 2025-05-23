@@ -80,6 +80,8 @@ export const divideSongIntoSections = async (req: Request, res: Response) => {
       success: true,
       data: {
         title,
+        subtitle: parsedBackgroundImages.subtitle || "",
+        header_background_image: parsedBackgroundImages.header_background_image || "",
         sections: sectionData,
       },
     });

@@ -3,6 +3,8 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IEssay extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
+  subtitle: string;
+  header_background_image: string;
   content: string;
   htmlContent?: string;
   author: mongoose.Types.ObjectId;
@@ -18,6 +20,14 @@ const EssaySchema = new Schema<IEssay>(
     title: {
       type: String,
       required: true,
+    },
+    subtitle: {
+      type: String,
+      default: "",
+    },
+    header_background_image: {
+      type: String,
+      default: "",
     },
     content: {
       type: String,

@@ -39,7 +39,7 @@
         --accent-secondary: #ffffff;
         --border-radius: 16px;
         --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-bg: rgba(255, 255, 255, 0.5);
         --glass-border: rgba(255, 255, 255, 0.2);
         --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.3);
       }
@@ -81,10 +81,34 @@
         overflow: hidden;
       }
 
+      header .bg-overlay {
+  background: rgba(0, 0, 0, 0.5); /* Adjust opacity as needed */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+
       h1 {
         font-family: "Playfair Display", serif;
         font-size: clamp(2.5rem, 8vw, 7rem);
         font-weight: 600;
+        margin-bottom: 1.5rem;
+        z-index: 2;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        color: var(--accent-color);
+        text-align: center;
+        max-width: 90%;
+        line-height: 1.1;
+      }
+
+      h2 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(1.5rem, 5vw, 3rem);
+        font-weight: 500;
         margin-bottom: 1.5rem;
         z-index: 2;
         text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
@@ -402,7 +426,10 @@
     <div class="smooth-wrapper">
       <div class="smooth-content">
         <header>
+          <div class="parallax-bg" id="header-bg"></div>
+          <div class="bg-overlay"></div>
           <h1>[Title]</h1>
+          <h2>[Subtitle]</h2>
           <div class="scroll-indicator">
             <span class="scroll-text">Scroll</span>
             <div class="scroll-arrow"></div>
@@ -522,6 +549,7 @@
     <script>
       // Set background images
       const backgroundImages = {
+        "header-bg": "[Header_background]",
         "bg-1": "",
         "bg-2": "",
         "bg-3": "",
@@ -537,7 +565,7 @@
       // Apply background images to sections
       document.addEventListener('DOMContentLoaded', () => {
         Object.entries(backgroundImages).forEach(([id, url]) => {
-          if (url) {
+          if (url && url.startsWith('http')) {  // Only apply if it's a valid URL
             const element = document.getElementById(id);
             if (element) {
               element.style.backgroundImage = `url('${url}')`;
