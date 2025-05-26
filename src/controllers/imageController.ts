@@ -16,8 +16,11 @@ process.on('SIGINT', async () => {
 });
 
 export const searchImages = async (req: Request, res: Response) => {
+  const sectionId = req.body.sectionId;
+  const cacheKey = sectionId ? `${req.body.prompt}_${sectionId}` : null;
+
   try {
-    const { prompt, maxImages, sectionId } = req.body;
+    const { prompt, maxImages } = req.body;
 
     if (!prompt) {
       return res.status(400).json({
@@ -28,22 +31,25 @@ export const searchImages = async (req: Request, res: Response) => {
 
     // If this is a sequential fetch request
     if (sectionId) {
-      const cacheKey = `${prompt}_${sectionId}`;
-      
       // If there's already a fetch in progress for this section, return it
-      if (ongoingFetches.has(cacheKey)) {
-        const result = await ongoingFetches.get(cacheKey);
-        ongoingFetches.delete(cacheKey);
+      if (ongoingFetches.has(cacheKey!)) {
+        const result = await ongoingFetches.get(cacheKey!);
+        ongoingFetches.delete(cacheKey!);
         return res.json(result);
       }
 
       // Start a new fetch and store it in the cache
       const fetchPromise = getImageUrls(prompt, maxImages || 10);
-      ongoingFetches.set(cacheKey, fetchPromise);
+      ongoingFetches.set(cacheKey!, fetchPromise);
       
-      const result = await fetchPromise;
-      ongoingFetches.delete(cacheKey);
-      return res.json(result);
+      try {
+        const result = await fetchPromise;
+        ongoingFetches.delete(cacheKey!);
+        return res.json(result);
+      } catch (error) {
+        ongoingFetches.delete(cacheKey!);
+        throw error;
+      }
     }
 
     // Regular fetch
@@ -57,6 +63,16 @@ export const searchImages = async (req: Request, res: Response) => {
       message: "Server error occurred",
       error: errorMessage,
     });
+  }
+};
+
+// Handle request cancellation
+export const cleanupOngoingFetches = (sectionId?: string) => {
+  if (sectionId) {
+    const cacheKey = `${sectionId}`;
+    ongoingFetches.delete(cacheKey);
+  } else {
+    ongoingFetches.clear();
   }
 };
 

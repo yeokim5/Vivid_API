@@ -225,11 +225,14 @@ export const createHtmlEssay = async (
     // Save the generated HTML content
     const essay = await Essay.create({
       title,
+      subtitle: subtitle || "",
+      header_background_image: header_background_image || "",
       content: JSON.stringify(content),
       author: req.user.id || req.user._id,
       tags: [],
       htmlContent,
       youtubeVideoCode: youtubeVideoCode || "",
+      isPublished: true
     });
 
     res.status(201).json({
@@ -240,8 +243,11 @@ export const createHtmlEssay = async (
       essay: {
         id: essay._id,
         title: essay.title,
+        subtitle: essay.subtitle,
+        header_background_image: essay.header_background_image,
         content: essay.content,
         tags: essay.tags,
+        isPublished: essay.isPublished
       },
     });
   } catch (error) {
@@ -330,12 +336,34 @@ export const getAllPublishedEssays = async (
   res: Response
 ): Promise<void> => {
   try {
-    const essays = await Essay.find({ isPublished: true })
-      .sort({ views: -1 })
-      .select('title subtitle header_background_image author views createdAt')
-      .populate('author', 'name');
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const sortBy = (req.query.sortBy as string) || 'latest';
 
-    res.status(200).json(essays);
+    let sortQuery = {};
+    if (sortBy === 'latest') {
+      sortQuery = { createdAt: -1 };
+    } else if (sortBy === 'popular') {
+      sortQuery = { views: -1 };
+    }
+
+    const [essays, total] = await Promise.all([
+      Essay.find({})
+        .sort(sortQuery)
+        .select('title subtitle header_background_image author views createdAt tags isPublished')
+        .populate('author', 'name')
+        .skip(skip)
+        .limit(limit),
+      Essay.countDocuments({})
+    ]);
+
+    res.status(200).json({
+      essays,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalEssays: total
+    });
   } catch (error) {
     console.error("Get all essays error:", error);
     res.status(500).json({ message: "Failed to retrieve essays" });

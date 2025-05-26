@@ -39,6 +39,14 @@ const EssaySchema = new mongoose_1.Schema({
         type: String,
         required: true,
     },
+    subtitle: {
+        type: String,
+        default: "",
+    },
+    header_background_image: {
+        type: String,
+        default: "",
+    },
     content: {
         type: String,
         required: true,
@@ -65,6 +73,10 @@ const EssaySchema = new mongoose_1.Schema({
             type: String,
         },
     ],
+    youtubeVideoCode: {
+        type: String,
+        default: "",
+    },
 }, {
     timestamps: true,
 });

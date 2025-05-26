@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.renderEssayById = exports.createHtmlEssay = exports.deleteEssay = exports.updateEssay = exports.getEssayById = exports.getUserEssays = exports.createEssay = void 0;
+exports.incrementEssayViews = exports.getAllPublishedEssays = exports.renderEssayById = exports.createHtmlEssay = exports.deleteEssay = exports.updateEssay = exports.getEssayById = exports.getUserEssays = exports.createEssay = void 0;
 const Essay_1 = __importDefault(require("../models/Essay"));
 const path_1 = __importDefault(require("path"));
 const replace_1 = require("../utils/replace");
@@ -71,11 +71,6 @@ const getEssayById = async (req, res) => {
         if (!essay) {
             res.status(404).json({ message: "Essay not found" });
             return;
-        }
-        // Increment view count for published essays
-        if (essay.isPublished) {
-            essay.views += 1;
-            await essay.save();
         }
         res.status(200).json({ essay });
     }
@@ -165,7 +160,7 @@ exports.deleteEssay = deleteEssay;
 // Create HTML essay
 const createHtmlEssay = async (req, res) => {
     try {
-        const { title, content } = req.body;
+        const { title, subtitle, header_background_image, content, youtubeVideoCode } = req.body;
         if (!req.user) {
             res.status(401).json({ message: "Not authenticated" });
             return;
@@ -177,6 +172,9 @@ const createHtmlEssay = async (req, res) => {
         // Transform the content to match the expected format
         const contentData = {
             title,
+            subtitle: subtitle || "",
+            header_background_image: header_background_image || "",
+            youtubeVideoCode: youtubeVideoCode || "",
             ...content.sections.reduce((acc, section, index) => {
                 const sectionNum = index + 1;
                 return {
@@ -189,27 +187,40 @@ const createHtmlEssay = async (req, res) => {
         // Generate HTML from the template
         const templatePath = path_1.default.join(__dirname, "../utils/template.html");
         const htmlContent = (0, replace_1.generateHtmlFromTemplate)(contentData, templatePath);
-        // Create new essay with HTML content
+        // Save the generated HTML content
         const essay = await Essay_1.default.create({
             title,
-            content: JSON.stringify(content), // Store the raw content as JSON string
-            htmlContent, // Store the generated HTML
+            subtitle: subtitle || "",
+            header_background_image: header_background_image || "",
+            content: JSON.stringify(content),
             author: req.user.id || req.user._id,
-            isPublished: true, // Set as published by default for HTML essays
-            tags: ["html-essay"],
+            tags: [],
+            htmlContent,
+            youtubeVideoCode: youtubeVideoCode || "",
+            isPublished: true
         });
         res.status(201).json({
             success: true,
             message: "HTML essay created successfully",
             essayId: essay._id,
-            viewUrl: `/api/essays/${essay._id}/render`, // URL to view the rendered HTML
+            viewUrl: `/essay/${essay._id}`,
+            essay: {
+                id: essay._id,
+                title: essay.title,
+                subtitle: essay.subtitle,
+                header_background_image: essay.header_background_image,
+                content: essay.content,
+                tags: essay.tags,
+                isPublished: essay.isPublished
+            },
         });
     }
     catch (error) {
         console.error("Create HTML essay error:", error);
         res.status(500).json({
             success: false,
-            message: "Failed to create HTML essay"
+            message: "Failed to create HTML essay",
+            error: error instanceof Error ? error.message : "Unknown error"
         });
     }
 };
@@ -223,16 +234,49 @@ const renderEssayById = async (req, res) => {
             res.status(404).json({ message: "Essay not found" });
             return;
         }
-        if (!essay.htmlContent) {
-            res.status(404).json({ message: "HTML content not found for this essay" });
-            return;
+        let htmlContent = essay.htmlContent;
+        // If htmlContent doesn't exist, generate it from the content
+        if (!htmlContent) {
+            try {
+                const contentData = {
+                    title: essay.title,
+                    youtubeVideoCode: essay.youtubeVideoCode || "",
+                    ...JSON.parse(essay.content).sections.reduce((acc, section, index) => {
+                        const sectionNum = index + 1;
+                        return {
+                            ...acc,
+                            [`section${sectionNum}`]: section.content,
+                            [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+                        };
+                    }, {})
+                };
+                // Generate HTML from the template
+                const templatePath = path_1.default.join(__dirname, "../utils/template.html");
+                htmlContent = (0, replace_1.generateHtmlFromTemplate)(contentData, templatePath);
+                // Save the generated HTML content
+                essay.htmlContent = htmlContent;
+                await essay.save();
+            }
+            catch (error) {
+                console.error("Error generating HTML content:", error);
+                res.status(500).json({ message: "Failed to generate HTML content" });
+                return;
+            }
         }
-        // Increment view count
-        essay.views += 1;
-        await essay.save();
+        // Set Content Security Policy headers
+        res.setHeader("Content-Security-Policy", "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "img-src 'self' data: https: blob: https://assets.lummi.ai https://images.stockcake.com https://*.stockcake.com; " +
+            "connect-src 'self' https://api.unsplash.com https://assets.lummi.ai https://fonts.googleapis.com https://fonts.gstatic.com; " +
+            "font-src 'self' data: https: https://fonts.gstatic.com; " +
+            "object-src 'none'; " +
+            "media-src 'self'; " +
+            "frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com;");
         // Send HTML directly
         res.setHeader("Content-Type", "text/html");
-        res.send(essay.htmlContent);
+        res.send(htmlContent);
     }
     catch (error) {
         console.error("Render essay error:", error);
@@ -240,3 +284,61 @@ const renderEssayById = async (req, res) => {
     }
 };
 exports.renderEssayById = renderEssayById;
+// Get all published essays
+const getAllPublishedEssays = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const sortBy = req.query.sortBy || 'latest';
+        let sortQuery = {};
+        if (sortBy === 'latest') {
+            sortQuery = { createdAt: -1 };
+        }
+        else if (sortBy === 'popular') {
+            sortQuery = { views: -1 };
+        }
+        const [essays, total] = await Promise.all([
+            Essay_1.default.find({})
+                .sort(sortQuery)
+                .select('title subtitle header_background_image author views createdAt tags isPublished')
+                .populate('author', 'name')
+                .skip(skip)
+                .limit(limit),
+            Essay_1.default.countDocuments({})
+        ]);
+        res.status(200).json({
+            essays,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalEssays: total
+        });
+    }
+    catch (error) {
+        console.error("Get all essays error:", error);
+        res.status(500).json({ message: "Failed to retrieve essays" });
+    }
+};
+exports.getAllPublishedEssays = getAllPublishedEssays;
+// Increment essay view count
+const incrementEssayViews = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const essay = await Essay_1.default.findById(id);
+        if (!essay) {
+            res.status(404).json({ message: "Essay not found" });
+            return;
+        }
+        // Only increment for published essays
+        if (essay.isPublished) {
+            essay.views += 1;
+            await essay.save();
+        }
+        res.status(200).json({ views: essay.views });
+    }
+    catch (error) {
+        console.error("Increment views error:", error);
+        res.status(500).json({ message: "Failed to increment views" });
+    }
+};
+exports.incrementEssayViews = incrementEssayViews;

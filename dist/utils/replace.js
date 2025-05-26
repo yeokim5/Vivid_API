@@ -35,12 +35,25 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
           <div class="line"></div>
         </div>
       </section>`);
-        // Replace the title
-        htmlTemplate = htmlTemplate.replace(/\[title\]/g, contentData.title);
+        // Replace the title and subtitle
+        htmlTemplate = htmlTemplate.replace(/\[title\]/gi, contentData.title);
+        htmlTemplate = htmlTemplate.replace(/\[subtitle\]/gi, contentData.subtitle || "");
+        // Replace YouTube video code
+        if (contentData.youtubeVideoCode && contentData.youtubeVideoCode.trim() !== "") {
+            // Replace the YouTube video code
+            htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, contentData.youtubeVideoCode);
+            // Make sure the music icon is visible
+            htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: block;">`);
+        }
+        else {
+            // If no YouTube video code, hide the music player container
+            htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: none;">`);
+        }
         // Update the background images in the JavaScript section
         const backgroundImagesScript = `
     // Set background images
     const backgroundImages = {
+      "header-bg": "${contentData.header_background_image || ''}",
       "bg-1": "${contentData.section1_image_url || ''}",
       "bg-2": "${contentData.section2_image_url || ''}",
       "bg-3": "${contentData.section3_image_url || ''}",
@@ -51,7 +64,19 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
       "bg-8": "${contentData.section8_image_url || ''}",
       "bg-9": "${contentData.section9_image_url || ''}",
       "bg-10": "${contentData.section10_image_url || ''}",
-    };`;
+    };
+
+    // Apply background images to sections
+    document.addEventListener('DOMContentLoaded', () => {
+      Object.entries(backgroundImages).forEach(([id, url]) => {
+        if (url && url.startsWith('http')) {  // Only apply if it's a valid URL
+          const element = document.getElementById(id);
+          if (element) {
+            element.style.backgroundImage = \`url('\${url}')\`;
+          }
+        }
+      });
+    });`;
         // Replace the existing background images object in the JavaScript
         htmlTemplate = htmlTemplate.replace(/\/\/ Set background images[\s\S]*?};/, backgroundImagesScript);
         // Add content to the quotes for each section

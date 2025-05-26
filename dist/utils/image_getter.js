@@ -1,101 +1,104 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getImageUrls = getImageUrls;
+exports.cleanup = cleanup;
 const puppeteer = require("puppeteer");
-// Helper function to wait
+// Global browser instance
+let browserInstance = null;
+// Initialize browser instance
+async function getBrowser() {
+    if (!browserInstance) {
+        browserInstance = await puppeteer.launch({
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--window-size=1920,1080',
+            ],
+            defaultViewport: { width: 1920, height: 1080 },
+        });
+    }
+    return browserInstance;
+}
+// Helper function to wait with reduced time
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// Function to extract images from page
+async function extractImages(page) {
+    return page.evaluate(() => {
+        const imageContainers = Array.from(document.querySelectorAll("div.h-min.w-auto.relative.z-10"));
+        const images = imageContainers
+            .map((container) => {
+            const img = container.querySelector("img");
+            const link = container.querySelector("a");
+            if (!img?.src)
+                return null;
+            const isPro = img.src.includes("/api/pro/") ||
+                link?.href.includes("/pro/") ||
+                container.querySelector("[data-pro]") !== null;
+            return isPro ? null : img.src;
+        })
+            .filter(Boolean);
+        // Also get any additional images that match our criteria
+        const additionalImages = Array.from(document.querySelectorAll("img"))
+            .filter((img) => img.src &&
+            img.src.includes("lummi.ai") &&
+            !img.src.includes("/api/pro/") &&
+            img.src.includes("?asset=original"))
+            .map((img) => img.src);
+        return [...new Set([...images, ...additionalImages])];
+    });
+}
 // Function to get image URLs from Lummi based on a prompt
 async function getImageUrls(prompt, maxImages = 10) {
     console.log(`Searching for images with prompt: "${prompt}"`);
     const encodedPrompt = encodeURIComponent(prompt);
     const searchUrl = `https://www.lummi.ai/s/photo/${encodedPrompt}`;
-    console.log(`URL: ${searchUrl}`);
-    const browser = await puppeteer.launch({
-        headless: true, // Run in headless mode for API use
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await getBrowser();
     const page = await browser.newPage();
-    // Set viewport to desktop size
-    await page.setViewport({ width: 1920, height: 1080 });
-    // Set user agent to look like a regular browser
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
     try {
-        console.log("Navigating to the search URL...");
-        await page.goto(searchUrl, {
-            waitUntil: "networkidle2",
-            timeout: 120000, // 2 minute timeout
+        // Set optimized page configurations
+        await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
+        // Disable unnecessary features
+        await page.setRequestInterception(true);
+        page.on('request', (request) => {
+            const resourceType = request.resourceType();
+            if (resourceType === 'image' || resourceType === 'stylesheet' || resourceType === 'font') {
+                request.continue();
+            }
+            else {
+                request.continue();
+            }
         });
-        // Wait for page to fully render
-        await wait(5000);
-        console.log("Extracting image URLs from Lummi...");
+        // Navigate with optimized settings
+        await page.goto(searchUrl, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000,
+        });
+        // Initial wait for content
+        await wait(2000);
         let lummiImages = [];
         let attempts = 0;
-        const maxAttempts = 5;
-        // Keep trying until we get enough images or reach max attempts
+        const maxAttempts = 3;
         while (lummiImages.length < maxImages && attempts < maxAttempts) {
             attempts++;
-            console.log(`Attempt ${attempts} - Currently found ${lummiImages.length} images`);
-            // Extract images from the current page state
-            const currentImages = await page.evaluate(() => {
-                // Look for image containers with the specific structure
-                const imageContainers = Array.from(document.querySelectorAll("div.h-min.w-auto.relative.z-10"));
-                return imageContainers
-                    .map((container) => {
-                    const img = container.querySelector("img");
-                    const link = container.querySelector("a");
-                    if (!img || !img.src)
-                        return null;
-                    // Check if this is a pro image by looking for pro URL patterns
-                    const isPro = img.src.includes("/api/pro/") ||
-                        link?.href.includes("/pro/") ||
-                        container.querySelector("[data-pro]") !== null;
-                    if (isPro)
-                        return null;
-                    return {
-                        src: img.src,
-                        alt: img.alt || "",
-                        href: link?.href || "",
-                    };
-                })
-                    .filter((item) => item !== null)
-                    .map((item) => item.src);
-            });
+            // Extract images from current state
+            const currentImages = await extractImages(page);
             // Add new unique images
             const newImages = currentImages.filter((src) => !lummiImages.includes(src));
             lummiImages.push(...newImages);
-            console.log(`Found ${newImages.length} new images in attempt ${attempts}`);
-            // If we have enough images, break
-            if (lummiImages.length >= maxImages) {
+            if (lummiImages.length >= maxImages)
                 break;
-            }
-            // Scroll down to load more images
+            // Scroll and wait for new content
             await page.evaluate(() => {
                 window.scrollBy(0, window.innerHeight);
             });
-            // Wait for new content to load
-            await wait(3000);
-        }
-        // Alternative method if we still don't have enough images
-        if (lummiImages.length < maxImages) {
-            console.log("Trying alternative extraction method...");
-            const altImages = await page.evaluate(() => {
-                // Look for any img tags with lummi.ai URLs that aren't pro
-                const allImages = Array.from(document.querySelectorAll("img"));
-                return allImages
-                    .filter((img) => img.src &&
-                    img.src.includes("lummi.ai") &&
-                    !img.src.includes("/api/pro/") &&
-                    img.src.includes("?asset=original"))
-                    .map((img) => img.src);
-            });
-            // Add unique images from alternative method
-            const newAltImages = altImages.filter((src) => !lummiImages.includes(src));
-            lummiImages.push(...newAltImages);
-            console.log(`Alternative method found ${newAltImages.length} additional images`);
+            await wait(1000);
         }
         // Limit to maxImages URLs
         lummiImages = lummiImages.slice(0, maxImages);
-        console.log(`Final result: ${lummiImages.length} images found`);
         return {
             success: true,
             message: `Found ${lummiImages.length} image URLs from Lummi`,
@@ -112,6 +115,13 @@ async function getImageUrls(prompt, maxImages = 10) {
         };
     }
     finally {
-        await browser.close();
+        await page.close();
+    }
+}
+// Cleanup function to close browser instance
+async function cleanup() {
+    if (browserInstance) {
+        await browserInstance.close();
+        browserInstance = null;
     }
 }

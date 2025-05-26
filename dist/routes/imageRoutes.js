@@ -10,4 +10,10 @@ const router = express_1.default.Router();
 router.post("/", imageController_1.searchImages);
 // Route for processing multiple background image suggestions
 router.post("/background-suggestions", imageController_1.processBackgroundImageSuggestions);
+// Route for cleaning up ongoing image fetches
+router.post("/cleanup", (req, res) => {
+    const { sectionId } = req.body;
+    (0, imageController_1.cleanupOngoingFetches)(sectionId);
+    res.json({ success: true, message: "Cleanup completed" });
+});
 exports.default = router;

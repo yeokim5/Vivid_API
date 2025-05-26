@@ -35,7 +35,23 @@ app.use((0, cors_1.default)({
     credentials: true,
 }));
 console.log("CORS configured with origin:", process.env.CLIENT_URL || "http://localhost:3000");
-app.use((0, helmet_1.default)());
+// Configure Helmet with CSP
+app.use((0, helmet_1.default)({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            imgSrc: ["'self'", "data:", "https:", "blob:", "https://assets.lummi.ai"],
+            connectSrc: ["'self'", "https://api.unsplash.com", "https://assets.lummi.ai", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+            fontSrc: ["'self'", "data:", "https:", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'self'"],
+        },
+    },
+}));
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));

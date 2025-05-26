@@ -7,18 +7,22 @@ const express_1 = __importDefault(require("express"));
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const essayController_1 = require("../controllers/essayController");
 const router = express_1.default.Router();
+// Get all published essays (public route)
+router.get("/", essayController_1.getAllPublishedEssays);
 // Create a new essay
 router.post("/", authMiddleware_1.verifyToken, essayController_1.createEssay);
 // Create HTML essay
-router.post("/create-html", authMiddleware_1.verifyToken, essayController_1.createHtmlEssay);
+router.post("/html", authMiddleware_1.verifyToken, essayController_1.createHtmlEssay);
 // Get all essays for the authenticated user
 router.get("/user", authMiddleware_1.verifyToken, essayController_1.getUserEssays);
+// Increment essay views
+router.post("/:id/view", essayController_1.incrementEssayViews);
+// Render HTML essay by ID (public route)
+router.get("/:id/render", essayController_1.renderEssayById);
 // Get essay by ID
 router.get("/:id", essayController_1.getEssayById);
 // Update essay
 router.put("/:id", authMiddleware_1.verifyToken, essayController_1.updateEssay);
 // Delete essay
 router.delete("/:id", authMiddleware_1.verifyToken, essayController_1.deleteEssay);
-// Render HTML essay by ID
-router.get("/:id/render", essayController_1.renderEssayById);
 exports.default = router;
