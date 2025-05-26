@@ -5,6 +5,7 @@ interface ContentData {
   title: string;
   subtitle?: string;
   header_background_image?: string;
+  youtubeVideoCode?: string;
   section1?: string;
   section1_image_url?: string;
   section2?: string;
@@ -72,6 +73,24 @@ export function generateHtmlFromTemplate(contentData: ContentData, templatePath:
     // Replace the title and subtitle
     htmlTemplate = htmlTemplate.replace(/\[title\]/gi, contentData.title);
     htmlTemplate = htmlTemplate.replace(/\[subtitle\]/gi, contentData.subtitle || "");
+
+    // Replace YouTube video code
+    if (contentData.youtubeVideoCode && contentData.youtubeVideoCode.trim() !== "") {
+      // Replace the YouTube video code
+      htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, contentData.youtubeVideoCode);
+      
+      // Make sure the music icon is visible
+      htmlTemplate = htmlTemplate.replace(
+        /<div class="music-player-container">/,
+        `<div class="music-player-container" style="display: block;">`
+      );
+    } else {
+      // If no YouTube video code, hide the music player container
+      htmlTemplate = htmlTemplate.replace(
+        /<div class="music-player-container">/,
+        `<div class="music-player-container" style="display: none;">`
+      );
+    }
 
     // Update the background images in the JavaScript section
     const backgroundImagesScript = `

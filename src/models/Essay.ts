@@ -13,6 +13,7 @@ export interface IEssay extends Document {
   isPublished: boolean;
   views: number;
   tags: string[];
+  youtubeVideoCode?: string;
 }
 
 const EssaySchema = new Schema<IEssay>(
@@ -55,6 +56,10 @@ const EssaySchema = new Schema<IEssay>(
         type: String,
       },
     ],
+    youtubeVideoCode: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

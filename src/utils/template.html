@@ -459,11 +459,127 @@
           --glass-bg: rgba(10, 10, 10, 0.9);
         }
       }
+
+      /* Music Player Styles */
+      .music-player-container {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+      }
+
+      .music-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: var(--transition-smooth);
+      }
+
+      .music-icon:hover {
+        transform: scale(1.05);
+      }
+
+      .music-icon svg {
+        width: 1.2rem;
+        height: 1.2rem;
+        fill: var(--accent-color);
+      }
+
+      .music-player {
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: var(--border-radius);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+        transition: var(--transition-smooth);
+        width: 300px;
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+      }
+
+      .music-player.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: all;
+      }
+
+      .player-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 1rem;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .player-title {
+        color: var(--accent-color);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .minimize-btn {
+        background: none;
+        border: none;
+        color: var(--accent-color);
+        cursor: pointer;
+        padding: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .minimize-btn svg {
+        width: 1rem;
+        height: 1rem;
+        fill: currentColor;
+      }
+
+      .player-content {
+        padding: 1rem;
+      }
+
+      .youtube-iframe {
+        width: 100%;
+        aspect-ratio: 16/9;
+        border: none;
+        border-radius: 8px;
+      }
     </style>
   </head>
   <body>
     <div class="loading">
       Loading...
+    </div>
+
+    <!-- Music Player Component -->
+    <div class="music-player-container">
+      <div class="music-icon" id="musicIcon">
+        <svg class="music-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+        <svg class="minus-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+          <path d="M19 13H5v-2h14v2z"/>
+        </svg>
+      </div>
+      <div class="music-player" id="musicPlayer">
+        <div class="player-header">
+        </div>
+        <div class="player-content">
+          <iframe class="youtube-iframe" src="https://www.youtube.com/embed/[Video_Code]" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>
     </div>
 
     <div class="smooth-wrapper">
@@ -637,6 +753,28 @@
             .catch(err => console.error('Failed to copy link:', err));
         }
       }
+    </script>
+    <script>
+      // Music Player Functionality
+      document.addEventListener('DOMContentLoaded', () => {
+        const musicIcon = document.getElementById('musicIcon');
+        const musicPlayer = document.getElementById('musicPlayer');
+        const musicSvg = musicIcon.querySelector('.music-svg');
+        const minusSvg = musicIcon.querySelector('.minus-svg');
+
+        musicIcon.addEventListener('click', () => {
+          const isVisible = musicPlayer.classList.contains('visible');
+          if (isVisible) {
+            musicPlayer.classList.remove('visible');
+            musicSvg.style.display = 'block';
+            minusSvg.style.display = 'none';
+          } else {
+            musicPlayer.classList.add('visible');
+            musicSvg.style.display = 'none';
+            minusSvg.style.display = 'block';
+          }
+        });
+      });
     </script>
   </body>
 </html>

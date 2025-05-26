@@ -78,7 +78,6 @@ export const getEssayById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-
     const essay = await Essay.findById(id);
 
     if (!essay) {
@@ -191,7 +190,7 @@ export const createHtmlEssay = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, subtitle, header_background_image, content } = req.body;
+    const { title, subtitle, header_background_image, content, youtubeVideoCode } = req.body;
 
     if (!req.user) {
       res.status(401).json({ message: "Not authenticated" });
@@ -208,6 +207,7 @@ export const createHtmlEssay = async (
       title,
       subtitle: subtitle || "",
       header_background_image: header_background_image || "",
+      youtubeVideoCode: youtubeVideoCode || "",
       ...content.sections.reduce((acc: any, section: any, index: number) => {
         const sectionNum = index + 1;
         return {
@@ -222,29 +222,34 @@ export const createHtmlEssay = async (
     const templatePath = path.join(__dirname, "../utils/template.html");
     const htmlContent = generateHtmlFromTemplate(contentData, templatePath);
 
-    // Create new essay with HTML content
+    // Save the generated HTML content
     const essay = await Essay.create({
       title,
-      subtitle: subtitle || "",
-      header_background_image: header_background_image || "",
-      content: JSON.stringify(content), // Store the raw content as JSON string
-      htmlContent, // Store the generated HTML
+      content: JSON.stringify(content),
       author: req.user.id || req.user._id,
-      isPublished: true, // Set as published by default for HTML essays
-      tags: ["html-essay"],
+      tags: [],
+      htmlContent,
+      youtubeVideoCode: youtubeVideoCode || "",
     });
 
     res.status(201).json({
       success: true,
       message: "HTML essay created successfully",
       essayId: essay._id,
-      viewUrl: `/api/essays/${essay._id}/render`, // URL to view the rendered HTML
+      viewUrl: `/essay/${essay._id}`,
+      essay: {
+        id: essay._id,
+        title: essay.title,
+        content: essay.content,
+        tags: essay.tags,
+      },
     });
   } catch (error) {
     console.error("Create HTML essay error:", error);
     res.status(500).json({ 
       success: false,
-      message: "Failed to create HTML essay" 
+      message: "Failed to create HTML essay",
+      error: error instanceof Error ? error.message : "Unknown error"
     });
   }
 };
@@ -270,6 +275,7 @@ export const renderEssayById = async (
       try {
         const contentData = {
           title: essay.title,
+          youtubeVideoCode: essay.youtubeVideoCode || "",
           ...JSON.parse(essay.content).sections.reduce((acc: any, section: any, index: number) => {
             const sectionNum = index + 1;
             return {
@@ -306,7 +312,7 @@ export const renderEssayById = async (
       "font-src 'self' data: https: https://fonts.gstatic.com; " +
       "object-src 'none'; " +
       "media-src 'self'; " +
-      "frame-src 'self';"
+      "frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com;"
     );
     
     // Send HTML directly
