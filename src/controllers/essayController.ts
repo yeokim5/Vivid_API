@@ -62,7 +62,8 @@ export const getUserEssays = async (
 
     const essays = await Essay.find({ author: userId })
       .sort({ createdAt: -1 })
-      .select("title createdAt isPublished views tags");
+      .select("title subtitle header_background_image createdAt isPublished views tags author")
+      .populate('author', 'name');
 
     res.status(200).json({ essays });
   } catch (error) {
