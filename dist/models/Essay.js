@@ -64,6 +64,10 @@ const EssaySchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    isPrivate: {
+        type: Boolean,
+        default: false,
+    },
     views: {
         type: Number,
         default: 0,
@@ -76,6 +80,18 @@ const EssaySchema = new mongoose_1.Schema({
     youtubeVideoCode: {
         type: String,
         default: "",
+    },
+    titleColor: {
+        type: String,
+        default: "#f8f9fa",
+    },
+    textColor: {
+        type: String,
+        default: "#f8f9fa",
+    },
+    fontFamily: {
+        type: String,
+        default: "Playfair Display",
     },
 }, {
     timestamps: true,

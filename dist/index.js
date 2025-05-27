@@ -18,6 +18,7 @@ const sectionRoutes_1 = __importDefault(require("./routes/sectionRoutes"));
 const imageRoutes_1 = __importDefault(require("./routes/imageRoutes"));
 require("./config/firebase"); // Import Firebase configuration
 const path_1 = __importDefault(require("path"));
+const ensureTemplateAssets_1 = __importDefault(require("./utils/ensureTemplateAssets"));
 // Load environment variables
 dotenv_1.default.config();
 console.log("=============== SERVER STARTUP ===============");
@@ -27,6 +28,8 @@ console.log("CLIENT_URL:", process.env.CLIENT_URL);
 console.log("PORT:", process.env.PORT || 5000);
 // Connect to MongoDB
 (0, db_1.default)();
+// Ensure template asset directories exist
+(0, ensureTemplateAssets_1.default)();
 // Initialize express app
 const app = (0, express_1.default)();
 // Middleware
@@ -87,6 +90,9 @@ app.use("/api/images", imageRoutes_1.default);
 console.log("Image routes registered at /api/images");
 // Serve static files from the uploads directory
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
+// Serve static files for the essay templates
+app.use("/styles", express_1.default.static(path_1.default.join(__dirname, "../../front/public/styles")));
+app.use("/js", express_1.default.static(path_1.default.join(__dirname, "../../front/public/js")));
 // List all registered routes
 console.log("Registered routes:");
 app._router.stack.forEach((middleware) => {

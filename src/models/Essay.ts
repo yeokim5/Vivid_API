@@ -11,9 +11,13 @@ export interface IEssay extends Document {
   createdAt: Date;
   updatedAt: Date;
   isPublished: boolean;
+  isPrivate: boolean;
   views: number;
   tags: string[];
   youtubeVideoCode?: string;
+  titleColor?: string;
+  textColor?: string;
+  fontFamily?: string;
 }
 
 const EssaySchema = new Schema<IEssay>(
@@ -47,6 +51,10 @@ const EssaySchema = new Schema<IEssay>(
       type: Boolean,
       default: false,
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
     views: {
       type: Number,
       default: 0,
@@ -59,6 +67,18 @@ const EssaySchema = new Schema<IEssay>(
     youtubeVideoCode: {
       type: String,
       default: "",
+    },
+    titleColor: {
+      type: String,
+      default: "#f8f9fa",
+    },
+    textColor: {
+      type: String,
+      default: "#f8f9fa",
+    },
+    fontFamily: {
+      type: String,
+      default: "Playfair Display",
     },
   },
   {

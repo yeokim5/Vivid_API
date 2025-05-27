@@ -14,6 +14,7 @@ import sectionRoutes from "./routes/sectionRoutes";
 import imageRoutes from "./routes/imageRoutes";
 import "./config/firebase"; // Import Firebase configuration
 import path from "path";
+import ensureTemplateAssets from "./utils/ensureTemplateAssets";
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,9 @@ console.log("PORT:", process.env.PORT || 5000);
 
 // Connect to MongoDB
 connectDB();
+
+// Ensure template asset directories exist
+ensureTemplateAssets();
 
 // Initialize express app
 const app = express();
@@ -104,6 +108,10 @@ console.log("Image routes registered at /api/images");
 
 // Serve static files from the uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Serve static files for the essay templates
+app.use("/styles", express.static(path.join(__dirname, "../../front/public/styles")));
+app.use("/js", express.static(path.join(__dirname, "../../front/public/js")));
 
 // List all registered routes
 console.log("Registered routes:");

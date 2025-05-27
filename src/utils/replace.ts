@@ -4,8 +4,15 @@ import path from "path";
 interface ContentData {
   title: string;
   subtitle?: string;
+  username?: string;
   header_background_image?: string;
   youtubeVideoCode?: string;
+  // Add styling properties
+  titleColor?: string;
+  textColor?: string;
+  fontFamily?: string;
+  boxBgColor?: string;
+  boxOpacity?: number;
   section1?: string;
   section1_image_url?: string;
   section2?: string;
@@ -70,9 +77,26 @@ export function generateHtmlFromTemplate(contentData: ContentData, templatePath:
       </section>`
     );
 
-    // Replace the title and subtitle
+    // Replace the title, subtitle, and username
     htmlTemplate = htmlTemplate.replace(/\[title\]/gi, contentData.title);
     htmlTemplate = htmlTemplate.replace(/\[subtitle\]/gi, contentData.subtitle || "");
+    htmlTemplate = htmlTemplate.replace(/\[username\]/gi, contentData.username || "Anonymous");
+
+    // Apply custom styling by updating CSS variables
+    htmlTemplate = htmlTemplate.replace(/\[TEXT_COLOR\]/gi, contentData.textColor || "#f8f9fa");
+    htmlTemplate = htmlTemplate.replace(/\[TITLE_COLOR\]/gi, contentData.titleColor || "#cccac4");
+    htmlTemplate = htmlTemplate.replace(/\[FONT_FAMILY\]/gi, contentData.fontFamily || "Playfair Display");
+    
+    // Apply box background color and opacity
+    const boxBgColor = contentData.boxBgColor || "#585858";
+    const boxOpacity = contentData.boxOpacity !== undefined ? contentData.boxOpacity : 0.5;
+    
+    // Add the box background styling to the CSS in the template
+    const boxBgStyleRegex = /\.quote\s*{[^}]*background:[^;]*;/;
+    const boxBgReplacement = `.quote {
+  background: rgba(${parseInt(boxBgColor.slice(1, 3), 16)}, ${parseInt(boxBgColor.slice(3, 5), 16)}, ${parseInt(boxBgColor.slice(5, 7), 16)}, ${boxOpacity});`;
+    
+    htmlTemplate = htmlTemplate.replace(boxBgStyleRegex, boxBgReplacement);
 
     // Replace YouTube video code
     if (contentData.youtubeVideoCode && contentData.youtubeVideoCode.trim() !== "") {
@@ -93,36 +117,17 @@ export function generateHtmlFromTemplate(contentData: ContentData, templatePath:
     }
 
     // Update the background images in the JavaScript section
-    const backgroundImagesScript = `
-    // Set background images
-    const backgroundImages = {
-      "header-bg": "${contentData.header_background_image || ''}",
-      "bg-1": "${contentData.section1_image_url || ''}",
-      "bg-2": "${contentData.section2_image_url || ''}",
-      "bg-3": "${contentData.section3_image_url || ''}",
-      "bg-4": "${contentData.section4_image_url || ''}",
-      "bg-5": "${contentData.section5_image_url || ''}",
-      "bg-6": "${contentData.section6_image_url || ''}",
-      "bg-7": "${contentData.section7_image_url || ''}",
-      "bg-8": "${contentData.section8_image_url || ''}",
-      "bg-9": "${contentData.section9_image_url || ''}",
-      "bg-10": "${contentData.section10_image_url || ''}",
-    };
-
-    // Apply background images to sections
-    document.addEventListener('DOMContentLoaded', () => {
-      Object.entries(backgroundImages).forEach(([id, url]) => {
-        if (url && url.startsWith('http')) {  // Only apply if it's a valid URL
-          const element = document.getElementById(id);
-          if (element) {
-            element.style.backgroundImage = \`url('\${url}')\`;
-          }
-        }
-      });
-    });`;
-
-    // Replace the existing background images object in the JavaScript
-    htmlTemplate = htmlTemplate.replace(/\/\/ Set background images[\s\S]*?};/, backgroundImagesScript);
+    htmlTemplate = htmlTemplate.replace(/\[Header_background\]/gi, contentData.header_background_image || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_1\]/gi, contentData.section1_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_2\]/gi, contentData.section2_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_3\]/gi, contentData.section3_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_4\]/gi, contentData.section4_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_5\]/gi, contentData.section5_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_6\]/gi, contentData.section6_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_7\]/gi, contentData.section7_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_8\]/gi, contentData.section8_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_9\]/gi, contentData.section9_image_url || "");
+    htmlTemplate = htmlTemplate.replace(/\[BG_10\]/gi, contentData.section10_image_url || "");
 
     // Add content to the quotes for each section
     for (let i = 1; i <= 10; i++) {

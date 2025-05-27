@@ -10,7 +10,7 @@ const replace_1 = require("../utils/replace");
 // Create a new essay
 const createEssay = async (req, res) => {
     try {
-        const { title, content, tags } = req.body;
+        const { title, content, tags, isPrivate } = req.body;
         if (!title || !content) {
             res.status(400).json({ message: "Title and content are required" });
             return;
@@ -26,6 +26,7 @@ const createEssay = async (req, res) => {
             content,
             author: req.user.id || req.user._id,
             tags: tags || [],
+            isPrivate: isPrivate || false,
         });
         res.status(201).json({
             message: "Essay created successfully",
@@ -34,6 +35,7 @@ const createEssay = async (req, res) => {
                 title: essay.title,
                 content: essay.content,
                 tags: essay.tags,
+                isPrivate: essay.isPrivate,
             },
         });
     }
@@ -54,7 +56,8 @@ const getUserEssays = async (req, res) => {
         const userId = req.user.id || req.user._id;
         const essays = await Essay_1.default.find({ author: userId })
             .sort({ createdAt: -1 })
-            .select("title createdAt isPublished views tags");
+            .select("title subtitle header_background_image createdAt isPublished isPrivate views tags author")
+            .populate('author', 'name');
         res.status(200).json({ essays });
     }
     catch (error) {
@@ -84,7 +87,7 @@ exports.getEssayById = getEssayById;
 const updateEssay = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, content, isPublished, tags } = req.body;
+        const { title, content, isPublished, isPrivate, tags } = req.body;
         // Ensure user is authenticated
         if (!req.user) {
             res.status(401).json({ message: "Not authenticated" });
@@ -110,6 +113,8 @@ const updateEssay = async (req, res) => {
             essay.tags = tags;
         if (isPublished !== undefined)
             essay.isPublished = isPublished;
+        if (isPrivate !== undefined)
+            essay.isPrivate = isPrivate;
         await essay.save();
         res.status(200).json({
             message: "Essay updated successfully",
@@ -118,6 +123,7 @@ const updateEssay = async (req, res) => {
                 title: essay.title,
                 content: essay.content,
                 isPublished: essay.isPublished,
+                isPrivate: essay.isPrivate,
                 tags: essay.tags,
             },
         });
@@ -160,7 +166,9 @@ exports.deleteEssay = deleteEssay;
 // Create HTML essay
 const createHtmlEssay = async (req, res) => {
     try {
-        const { title, subtitle, header_background_image, content, youtubeVideoCode } = req.body;
+        const { title, subtitle, header_background_image, content, youtubeVideoCode, isPrivate, 
+        // Styling properties
+        titleColor, textColor, fontFamily, boxBgColor, boxOpacity } = req.body;
         if (!req.user) {
             res.status(401).json({ message: "Not authenticated" });
             return;
@@ -175,6 +183,12 @@ const createHtmlEssay = async (req, res) => {
             subtitle: subtitle || "",
             header_background_image: header_background_image || "",
             youtubeVideoCode: youtubeVideoCode || "",
+            // Add styling properties to contentData
+            titleColor: titleColor || "#f8f9fa",
+            textColor: textColor || "#f8f9fa",
+            fontFamily: fontFamily || "Playfair Display",
+            boxBgColor: boxBgColor || "#585858",
+            boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5,
             ...content.sections.reduce((acc, section, index) => {
                 const sectionNum = index + 1;
                 return {
@@ -197,7 +211,12 @@ const createHtmlEssay = async (req, res) => {
             tags: [],
             htmlContent,
             youtubeVideoCode: youtubeVideoCode || "",
-            isPublished: true
+            isPublished: true,
+            isPrivate: isPrivate || false,
+            // Save styling properties in the essay
+            titleColor: titleColor || "#f8f9fa",
+            textColor: textColor || "#f8f9fa",
+            fontFamily: fontFamily || "Playfair Display"
         });
         res.status(201).json({
             success: true,
@@ -211,7 +230,12 @@ const createHtmlEssay = async (req, res) => {
                 header_background_image: essay.header_background_image,
                 content: essay.content,
                 tags: essay.tags,
-                isPublished: essay.isPublished
+                isPublished: essay.isPublished,
+                isPrivate: essay.isPrivate,
+                // Include styling properties in the response
+                titleColor: essay.titleColor,
+                textColor: essay.textColor,
+                fontFamily: essay.fontFamily
             },
         });
     }
@@ -240,7 +264,13 @@ const renderEssayById = async (req, res) => {
             try {
                 const contentData = {
                     title: essay.title,
+                    subtitle: essay.subtitle || "",
+                    header_background_image: essay.header_background_image || "",
                     youtubeVideoCode: essay.youtubeVideoCode || "",
+                    // Include styling properties
+                    titleColor: essay.titleColor || "#f8f9fa",
+                    textColor: essay.textColor || "#f8f9fa",
+                    fontFamily: essay.fontFamily || "Playfair Display",
                     ...JSON.parse(essay.content).sections.reduce((acc, section, index) => {
                         const sectionNum = index + 1;
                         return {
@@ -299,13 +329,13 @@ const getAllPublishedEssays = async (req, res) => {
             sortQuery = { views: -1 };
         }
         const [essays, total] = await Promise.all([
-            Essay_1.default.find({})
+            Essay_1.default.find({ isPrivate: { $ne: true }, isPublished: true })
                 .sort(sortQuery)
-                .select('title subtitle header_background_image author views createdAt tags isPublished')
+                .select('title subtitle header_background_image author views createdAt tags isPublished isPrivate')
                 .populate('author', 'name')
                 .skip(skip)
                 .limit(limit),
-            Essay_1.default.countDocuments({})
+            Essay_1.default.countDocuments({ isPrivate: { $ne: true }, isPublished: true })
         ]);
         res.status(200).json({
             essays,

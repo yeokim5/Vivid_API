@@ -3,6 +3,7 @@ import Essay, { IEssay } from "../models/Essay";
 import { AuthRequest } from "../types";
 import path from "path";
 import { generateHtmlFromTemplate } from "../utils/replace";
+import mongoose from "mongoose";
 
 // Create a new essay
 export const createEssay = async (
@@ -10,7 +11,7 @@ export const createEssay = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, content, tags } = req.body;
+    const { title, content, tags, isPrivate } = req.body;
 
     if (!title || !content) {
       res.status(400).json({ message: "Title and content are required" });
@@ -29,6 +30,7 @@ export const createEssay = async (
       content,
       author: req.user.id || req.user._id,
       tags: tags || [],
+      isPrivate: isPrivate || false,
     });
 
     res.status(201).json({
@@ -38,6 +40,7 @@ export const createEssay = async (
         title: essay.title,
         content: essay.content,
         tags: essay.tags,
+        isPrivate: essay.isPrivate,
       },
     });
   } catch (error) {
@@ -62,7 +65,7 @@ export const getUserEssays = async (
 
     const essays = await Essay.find({ author: userId })
       .sort({ createdAt: -1 })
-      .select("title subtitle header_background_image createdAt isPublished views tags author")
+      .select("title subtitle header_background_image createdAt isPublished isPrivate views tags author")
       .populate('author', 'name');
 
     res.status(200).json({ essays });
@@ -100,7 +103,7 @@ export const updateEssay = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, content, isPublished, tags } = req.body;
+    const { title, content, isPublished, isPrivate, tags } = req.body;
 
     // Ensure user is authenticated
     if (!req.user) {
@@ -128,6 +131,7 @@ export const updateEssay = async (
     if (content) essay.content = content;
     if (tags) essay.tags = tags;
     if (isPublished !== undefined) essay.isPublished = isPublished;
+    if (isPrivate !== undefined) essay.isPrivate = isPrivate;
 
     await essay.save();
 
@@ -138,6 +142,7 @@ export const updateEssay = async (
         title: essay.title,
         content: essay.content,
         isPublished: essay.isPublished,
+        isPrivate: essay.isPrivate,
         tags: essay.tags,
       },
     });
@@ -191,7 +196,20 @@ export const createHtmlEssay = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, subtitle, header_background_image, content, youtubeVideoCode } = req.body;
+    const { 
+      title, 
+      subtitle, 
+      header_background_image, 
+      content, 
+      youtubeVideoCode, 
+      isPrivate,
+      // Styling properties
+      titleColor,
+      textColor,
+      fontFamily,
+      boxBgColor,
+      boxOpacity
+    } = req.body;
 
     if (!req.user) {
       res.status(401).json({ message: "Not authenticated" });
@@ -203,12 +221,24 @@ export const createHtmlEssay = async (
       return;
     }
 
+    // Get the user's name
+    const User = mongoose.model('User');
+    const user = await User.findById(req.user.id || req.user._id);
+    const username = user ? user.name : "Anonymous";
+
     // Transform the content to match the expected format
     const contentData = {
       title,
       subtitle: subtitle || "",
+      username,
       header_background_image: header_background_image || "",
       youtubeVideoCode: youtubeVideoCode || "",
+      // Add styling properties to contentData
+      titleColor: titleColor || "#f8f9fa",
+      textColor: textColor || "#f8f9fa",
+      fontFamily: fontFamily || "Playfair Display",
+      boxBgColor: boxBgColor || "#585858",
+      boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5,
       ...content.sections.reduce((acc: any, section: any, index: number) => {
         const sectionNum = index + 1;
         return {
@@ -233,7 +263,12 @@ export const createHtmlEssay = async (
       tags: [],
       htmlContent,
       youtubeVideoCode: youtubeVideoCode || "",
-      isPublished: true
+      isPublished: true,
+      isPrivate: isPrivate || false,
+      // Save styling properties in the essay
+      titleColor: titleColor || "#f8f9fa",
+      textColor: textColor || "#f8f9fa",
+      fontFamily: fontFamily || "Playfair Display"
     });
 
     res.status(201).json({
@@ -248,7 +283,12 @@ export const createHtmlEssay = async (
         header_background_image: essay.header_background_image,
         content: essay.content,
         tags: essay.tags,
-        isPublished: essay.isPublished
+        isPublished: essay.isPublished,
+        isPrivate: essay.isPrivate,
+        // Include styling properties in the response
+        titleColor: essay.titleColor,
+        textColor: essay.textColor,
+        fontFamily: essay.fontFamily
       },
     });
   } catch (error) {
@@ -268,7 +308,7 @@ export const renderEssayById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const essay = await Essay.findById(id);
+    const essay = await Essay.findById(id).populate('author');
 
     if (!essay) {
       res.status(404).json({ message: "Essay not found" });
@@ -280,9 +320,23 @@ export const renderEssayById = async (
     // If htmlContent doesn't exist, generate it from the content
     if (!htmlContent) {
       try {
+        // Handle the populated author field safely
+        let username = "Anonymous";
+        if (essay.author) {
+          const authorDoc = essay.author as any; // Cast to any to access name property
+          username = authorDoc.name || "Anonymous";
+        }
+        
         const contentData = {
           title: essay.title,
+          subtitle: essay.subtitle || "",
+          username,
+          header_background_image: essay.header_background_image || "",
           youtubeVideoCode: essay.youtubeVideoCode || "",
+          // Include styling properties
+          titleColor: essay.titleColor || "#f8f9fa",
+          textColor: essay.textColor || "#f8f9fa",
+          fontFamily: essay.fontFamily || "Playfair Display",
           ...JSON.parse(essay.content).sections.reduce((acc: any, section: any, index: number) => {
             const sectionNum = index + 1;
             return {
@@ -308,9 +362,7 @@ export const renderEssayById = async (
     }
 
     // Set Content Security Policy headers
-    res.setHeader(
-      "Content-Security-Policy",
-      "default-src 'self'; " +
+    res.setHeader("Content-Security-Policy", "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
@@ -319,9 +371,8 @@ export const renderEssayById = async (
       "font-src 'self' data: https: https://fonts.gstatic.com; " +
       "object-src 'none'; " +
       "media-src 'self'; " +
-      "frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com;"
-    );
-    
+      "frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com;");
+
     // Send HTML directly
     res.setHeader("Content-Type", "text/html");
     res.send(htmlContent);
@@ -350,13 +401,13 @@ export const getAllPublishedEssays = async (
     }
 
     const [essays, total] = await Promise.all([
-      Essay.find({})
+      Essay.find({ isPrivate: { $ne: true }, isPublished: true })
         .sort(sortQuery)
-        .select('title subtitle header_background_image author views createdAt tags isPublished')
+        .select('title subtitle header_background_image author views createdAt tags isPublished isPrivate')
         .populate('author', 'name')
         .skip(skip)
         .limit(limit),
-      Essay.countDocuments({})
+      Essay.countDocuments({ isPrivate: { $ne: true }, isPublished: true })
     ]);
 
     res.status(200).json({
