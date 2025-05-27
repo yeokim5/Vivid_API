@@ -208,7 +208,8 @@ export const createHtmlEssay = async (
       textColor,
       fontFamily,
       boxBgColor,
-      boxOpacity
+      boxOpacity,
+      backgroundEffect
     } = req.body;
 
     if (!req.user) {
@@ -239,6 +240,7 @@ export const createHtmlEssay = async (
       fontFamily: fontFamily || "Playfair Display",
       boxBgColor: boxBgColor || "#585858",
       boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5,
+      backgroundEffect: backgroundEffect || "none",
       ...content.sections.reduce((acc: any, section: any, index: number) => {
         const sectionNum = index + 1;
         return {
@@ -268,7 +270,8 @@ export const createHtmlEssay = async (
       // Save styling properties in the essay
       titleColor: titleColor || "#f8f9fa",
       textColor: textColor || "#f8f9fa",
-      fontFamily: fontFamily || "Playfair Display"
+      fontFamily: fontFamily || "Playfair Display",
+      backgroundEffect: backgroundEffect || "none"
     });
 
     res.status(201).json({
@@ -288,7 +291,8 @@ export const createHtmlEssay = async (
         // Include styling properties in the response
         titleColor: essay.titleColor,
         textColor: essay.textColor,
-        fontFamily: essay.fontFamily
+        fontFamily: essay.fontFamily,
+        backgroundEffect: essay.backgroundEffect
       },
     });
   } catch (error) {
@@ -337,6 +341,7 @@ export const renderEssayById = async (
           titleColor: essay.titleColor || "#f8f9fa",
           textColor: essay.textColor || "#f8f9fa",
           fontFamily: essay.fontFamily || "Playfair Display",
+          backgroundEffect: essay.backgroundEffect || "none",
           ...JSON.parse(essay.content).sections.reduce((acc: any, section: any, index: number) => {
             const sectionNum = index + 1;
             return {

@@ -13,6 +13,7 @@ interface ContentData {
   fontFamily?: string;
   boxBgColor?: string;
   boxOpacity?: number;
+  backgroundEffect?: string;
   section1?: string;
   section1_image_url?: string;
   section2?: string;
@@ -128,6 +129,64 @@ export function generateHtmlFromTemplate(contentData: ContentData, templatePath:
     htmlTemplate = htmlTemplate.replace(/\[BG_8\]/gi, contentData.section8_image_url || "");
     htmlTemplate = htmlTemplate.replace(/\[BG_9\]/gi, contentData.section9_image_url || "");
     htmlTemplate = htmlTemplate.replace(/\[BG_10\]/gi, contentData.section10_image_url || "");
+    
+    // Set the background effect
+    htmlTemplate = htmlTemplate.replace(/\[BACKGROUND_EFFECT\]/gi, contentData.backgroundEffect || "none");
+    
+    // Add debug logging for background effect
+    const debugScript = `
+    <script>
+      console.log("Background effect replaced to:", "${contentData.backgroundEffect || "none"}");
+      
+      // Add a fallback initialization for the background effect
+      document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(function() {
+          if (typeof initBackgroundEffect === 'function' && !document.querySelector('.background-effect-container')) {
+            console.log("Fallback: Initializing background effect from replace.ts:", "${contentData.backgroundEffect || "none"}");
+            initBackgroundEffect("${contentData.backgroundEffect || "none"}");
+          }
+          
+          // Additional check to fix z-index issues
+          setTimeout(function() {
+            const bgContainer = document.querySelector('.background-effect-container');
+            if (bgContainer) {
+              console.log("Applying force styles to background effect container");
+              bgContainer.style.position = 'fixed';
+              bgContainer.style.top = '0';
+              bgContainer.style.left = '0';
+              bgContainer.style.width = '100%';
+              bgContainer.style.height = '100%';
+              bgContainer.style.pointerEvents = 'none';
+              bgContainer.style.zIndex = '5';
+              bgContainer.style.overflow = 'hidden';
+              
+              // Fix any parent element z-index issues
+              const bgOverlays = document.querySelectorAll('.bg-overlay');
+              if (bgOverlays.length > 0) {
+                console.log("Setting correct z-index for overlays");
+                bgOverlays.forEach(overlay => {
+                  overlay.style.zIndex = '2'; // Keep this below the background effect
+                });
+              }
+              
+              // Make sure content is above the background effect
+              const quoteElements = document.querySelectorAll('.quote');
+              if (quoteElements.length > 0) {
+                console.log("Setting correct z-index for content");
+                quoteElements.forEach(quote => {
+                  quote.style.zIndex = '10'; // Keep this above the background effect
+                  quote.style.position = 'relative'; // Ensure z-index works
+                });
+              }
+            }
+          }, 1500);
+        }, 1000);
+      });
+    </script>
+    `;
+    
+    // Insert debug script before the closing body tag
+    htmlTemplate = htmlTemplate.replace('</body>', `${debugScript}\n</body>`);
 
     // Add content to the quotes for each section
     for (let i = 1; i <= 10; i++) {

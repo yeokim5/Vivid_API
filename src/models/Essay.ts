@@ -18,6 +18,7 @@ export interface IEssay extends Document {
   titleColor?: string;
   textColor?: string;
   fontFamily?: string;
+  backgroundEffect?: string;
 }
 
 const EssaySchema = new Schema<IEssay>(
@@ -79,6 +80,10 @@ const EssaySchema = new Schema<IEssay>(
     fontFamily: {
       type: String,
       default: "Playfair Display",
+    },
+    backgroundEffect: {
+      type: String,
+      default: "none",
     },
   },
   {

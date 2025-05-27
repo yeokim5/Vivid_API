@@ -57,10 +57,268 @@
       .quote {
         font-family: "[FONT_FAMILY]", serif;
         background: rgba(88, 88, 88, 0.5); /* This line will be replaced by the custom background color and opacity */
+        position: relative;
+        z-index: 10; /* Above the background effect */
+      }
+      
+      /* Z-index hierarchy for proper layering */
+      .parallax-bg {
+        z-index: 1; /* Background image at the bottom */
+      }
+      
+      .bg-overlay {
+        z-index: 2; /* Overlay above background image but below effects */
+      }
+      
+      /* Background effect container will have z-index 5 via JS */
+      
+      header h1, header h2, .author, .scroll-indicator {
+        position: relative;
+        z-index: 10; /* Above the background effect */
+      }
+      
+      /* Ensure nav dots and UI elements stay on top */
+      .nav-dots, .share-button, .credits, .music-icon {
+        z-index: 100; /* Always on top */
       }
     </style>
   </head>
   <body>
+    <!-- Direct Injection Script for Background Effects -->
+    <script>
+      (function() {
+        console.log("Direct injection script running");
+        
+        // Store the background effect type
+        const bgEffect = "[BACKGROUND_EFFECT]";
+        console.log("Direct injection detected background effect:", bgEffect);
+        
+        // Create a function to directly inject the background effect
+        function injectBackgroundEffect() {
+          if (!bgEffect || bgEffect === "none" || bgEffect === "[BACKGROUND_EFFECT]") {
+            console.log("No background effect to inject");
+            return;
+          }
+          
+          console.log("Directly injecting background effect:", bgEffect);
+          
+          // Remove any existing containers
+          const existingContainers = document.querySelectorAll('.background-effect-container');
+          existingContainers.forEach(c => c.remove());
+          
+          // Create container
+          const container = document.createElement('div');
+          container.className = 'background-effect-container';
+          container.id = 'direct-inject-background';
+          
+          // Apply critical styles
+          container.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            pointer-events: none !important;
+            z-index: 5 !important;
+            overflow: hidden !important;
+          `;
+          
+          // Add to body
+          document.body.appendChild(container);
+          
+          // Create effect based on type
+          switch(bgEffect) {
+            case 'blob':
+              createDirectBlobs(container);
+              break;
+            case 'firefly':
+              createDirectFireflies(container);
+              break;
+            case 'particles':
+              createDirectParticles(container);
+              break;
+            case 'gradient':
+              createDirectGradient(container);
+              break;
+          }
+          
+          console.log("Background effect directly injected");
+        }
+        
+        // Create blob effect
+        function createDirectBlobs(container) {
+          const colors = [
+            'rgba(255, 94, 98, 0.95)', 
+            'rgba(255, 153, 102, 0.95)', 
+            'rgba(110, 72, 170, 0.95)', 
+            'rgba(157, 80, 187, 0.95)',
+            'rgba(0, 201, 255, 0.95)'
+          ];
+          
+          // Add style
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes blob-float {
+              0%, 100% { transform: translate(0, 0) scale(1); }
+              25% { transform: translate(80px, 80px) scale(1.5); }
+              50% { transform: translate(160px, -80px) scale(1.2); }
+              75% { transform: translate(-80px, 80px) scale(1.4); }
+            }
+          `;
+          container.appendChild(style);
+          
+          // Create blobs
+          for (let i = 0; i < 8; i++) {
+            const blob = document.createElement('div');
+            const size = Math.random() * 400 + 200;
+            const left = Math.random() * 100;
+            const top = Math.random() * 100;
+            
+            blob.style.cssText = `
+              position: absolute !important;
+              width: ${size}px !important;
+              height: ${size}px !important;
+              left: ${left}% !important;
+              top: ${top}% !important;
+              border-radius: 50% !important;
+              background: ${colors[i % colors.length]} !important;
+              filter: blur(60px) !important;
+              opacity: 0.9 !important;
+              animation: blob-float 15s infinite !important;
+              animation-delay: ${Math.random() * -20}s !important;
+            `;
+            
+            container.appendChild(blob);
+          }
+        }
+        
+        // Create firefly effect
+        function createDirectFireflies(container) {
+          // Add style
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes firefly {
+              0% { opacity: 0; transform: translateY(0) translateX(0) scale(0.2); }
+              10% { opacity: 1; }
+              90% { opacity: 1; }
+              100% { opacity: 0; transform: translateY(-150px) translateX(150px) scale(1.5); }
+            }
+          `;
+          container.appendChild(style);
+          
+          // Create fireflies
+          for (let i = 0; i < 150; i++) {
+            const firefly = document.createElement('div');
+            const size = Math.random() * 4 + 3;
+            const left = Math.random() * 100;
+            const top = Math.random() * 100;
+            const duration = Math.random() * 6 + 4;
+            const color = i % 2 === 0 ? '#ffbb00' : '#ffffff';
+            const glow = i % 2 === 0 ? 
+              '0 0 25px 8px rgba(255, 187, 0, 0.95)' : 
+              '0 0 25px 8px rgba(255, 255, 255, 0.95)';
+            
+            firefly.style.cssText = `
+              position: absolute !important;
+              width: ${size}px !important;
+              height: ${size}px !important;
+              left: ${left}% !important;
+              top: ${top}% !important;
+              border-radius: 50% !important;
+              background: ${color} !important;
+              box-shadow: ${glow} !important;
+              opacity: 0 !important;
+              animation: firefly ${duration}s linear infinite !important;
+              animation-delay: ${Math.random() * -10}s !important;
+            `;
+            
+            container.appendChild(firefly);
+          }
+        }
+        
+        // Create particles effect
+        function createDirectParticles(container) {
+          // Add style
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes float {
+              0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.9; }
+              90% { opacity: 0.9; }
+              100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+            }
+          `;
+          container.appendChild(style);
+          
+          // Colors
+          const colors = [
+            '#ffffff', // White
+            '#7f7fd5', // Purple
+            '#86a8e7', // Blue
+            '#91eae4'  // Cyan
+          ];
+          
+          // Create particles
+          for (let i = 0; i < 150; i++) {
+            const particle = document.createElement('div');
+            const size = Math.random() * 8 + 3;
+            const left = Math.random() * 100;
+            const duration = Math.random() * 15 + 10;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            particle.style.cssText = `
+              position: absolute !important;
+              width: ${size}px !important;
+              height: ${size}px !important;
+              left: ${left}% !important;
+              bottom: -20px !important;
+              border-radius: 50% !important;
+              background: ${color} !important;
+              box-shadow: 0 0 20px 5px ${color} !important;
+              opacity: 0.9 !important;
+              animation: float ${duration}s linear infinite !important;
+              animation-delay: ${Math.random() * -20}s !important;
+            `;
+            
+            container.appendChild(particle);
+          }
+        }
+        
+        // Create gradient effect
+        function createDirectGradient(container) {
+          const gradient = document.createElement('div');
+          gradient.style.cssText = `
+            position: absolute !important;
+            top: -50% !important;
+            left: -50% !important;
+            width: 200% !important;
+            height: 200% !important;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab) !important;
+            background-size: 300% 300% !important;
+            opacity: 0.9 !important;
+            animation: gradient 8s ease infinite !important;
+          `;
+          
+          // Add style
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes gradient {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+          `;
+          container.appendChild(style);
+          container.appendChild(gradient);
+        }
+        
+        // Run at multiple times to ensure it works
+        setTimeout(injectBackgroundEffect, 500);
+        setTimeout(injectBackgroundEffect, 1500);
+        setTimeout(injectBackgroundEffect, 3000);
+      })();
+    </script>
+
     <div class="loading">
       Loading...
     </div>
@@ -92,7 +350,7 @@
           <h1>[Title]</h1>
           <h2>[Subtitle]</h2>
           <div class="author">by [Username]</div>
-          <div class="scroll-indicator">
+          <div class="scroll-indicator" style="font-size: 1.5rem; color: white;">
             <span class="scroll-text">Scroll</span>
             <div class="scroll-arrow"></div>
           </div>
@@ -203,7 +461,34 @@
         "bg-9": "[BG_9]",
         "bg-10": "[BG_10]",
       };
+      
+      // Get background effect
+      const backgroundEffect = "[BACKGROUND_EFFECT]";
+      console.log("Template background effect:", backgroundEffect);
+      
+      // Store this in a global variable for immediate access
+      window.essayBackgroundEffect = backgroundEffect;
     </script>
+    
+    <!-- Background Effects Scripts -->
+    <script>
+      // Create a check that verifies the background effect is properly applied
+      function checkBackgroundEffect() {
+        console.log("Checking background effect:", window.essayBackgroundEffect);
+        if (!document.querySelector('.background-effect-container') && window.essayBackgroundEffect && window.essayBackgroundEffect !== "none" && window.essayBackgroundEffect !== "[BACKGROUND_EFFECT]") {
+          console.log("Manually re-applying background effect");
+          if (typeof initBackgroundEffect === 'function') {
+            initBackgroundEffect(window.essayBackgroundEffect);
+          }
+        }
+      }
+      
+      // Check multiple times to ensure effect is applied
+      setTimeout(checkBackgroundEffect, 1000);
+      setTimeout(checkBackgroundEffect, 2000);
+      setTimeout(checkBackgroundEffect, 3000);
+    </script>
+    <script src="/js/background-effects.js"></script>
     
     <!-- Main script file -->
     <script src="/js/essay-template.js"></script>
