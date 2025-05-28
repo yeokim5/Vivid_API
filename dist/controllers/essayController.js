@@ -336,7 +336,9 @@ const createHtmlEssay = async (req, res) => {
             titleColor: titleColor || "#f8f9fa",
             textColor: textColor || "#f8f9fa",
             fontFamily: fontFamily || "Playfair Display",
-            backgroundEffect: backgroundEffect || "none"
+            backgroundEffect: backgroundEffect || "none",
+            boxBgColor: boxBgColor || "#585858",
+            boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5
         });
         res.status(201).json({
             success: true,
@@ -356,7 +358,9 @@ const createHtmlEssay = async (req, res) => {
                 titleColor: essay.titleColor,
                 textColor: essay.textColor,
                 fontFamily: essay.fontFamily,
-                backgroundEffect: essay.backgroundEffect
+                backgroundEffect: essay.backgroundEffect,
+                boxBgColor: essay.boxBgColor,
+                boxOpacity: essay.boxOpacity
             },
         });
     }
@@ -400,6 +404,8 @@ const renderEssayById = async (req, res) => {
                     textColor: essay.textColor || "#f8f9fa",
                     fontFamily: essay.fontFamily || "Playfair Display",
                     backgroundEffect: essay.backgroundEffect || "none",
+                    boxBgColor: essay.boxBgColor || "#585858",
+                    boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
                     ...JSON.parse(essay.content).sections.reduce((acc, section, index) => {
                         const sectionNum = index + 1;
                         return {

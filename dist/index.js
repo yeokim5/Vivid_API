@@ -90,9 +90,45 @@ app.use("/api/images", imageRoutes_1.default);
 console.log("Image routes registered at /api/images");
 // Serve static files from the uploads directory
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
+// Serve static files from the public directory with proper MIME types
+app.use(express_1.default.static(path_1.default.join(__dirname, "../public"), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+        else if (path.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+        else if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+        else if (path.endsWith('.html')) {
+            res.setHeader('Content-Type', 'text/html');
+        }
+    }
+}));
 // Serve static files for the essay templates
 app.use("/styles", express_1.default.static(path_1.default.join(__dirname, "../../front/public/styles")));
-app.use("/js", express_1.default.static(path_1.default.join(__dirname, "../../front/public/js")));
+app.use("/js", express_1.default.static(path_1.default.join(__dirname, "../../front/public/js"), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+        else if (path.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+    }
+}));
+// Add a new route for serving module scripts with correct MIME type
+app.get('*.js', (req, res, next) => {
+    res.set('Content-Type', 'application/javascript');
+    next();
+});
+// Add a route for serving ES modules with correct MIME type
+app.get('*.mjs', (req, res, next) => {
+    res.set('Content-Type', 'application/javascript');
+    next();
+});
 // List all registered routes
 console.log("Registered routes:");
 app._router.stack.forEach((middleware) => {
