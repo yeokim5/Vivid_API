@@ -93,6 +93,18 @@ const EssaySchema = new mongoose_1.Schema({
         type: String,
         default: "Playfair Display",
     },
+    backgroundEffect: {
+        type: String,
+        default: "none",
+    },
+    boxBgColor: {
+        type: String,
+        default: "#585858",
+    },
+    boxOpacity: {
+        type: Number,
+        default: 0.5,
+    },
 }, {
     timestamps: true,
 });

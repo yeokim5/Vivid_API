@@ -19,6 +19,8 @@ export interface IEssay extends Document {
   textColor?: string;
   fontFamily?: string;
   backgroundEffect?: string;
+  boxBgColor?: string;
+  boxOpacity?: number;
 }
 
 const EssaySchema = new Schema<IEssay>(
@@ -84,6 +86,14 @@ const EssaySchema = new Schema<IEssay>(
     backgroundEffect: {
       type: String,
       default: "none",
+    },
+    boxBgColor: {
+      type: String,
+      default: "#585858",
+    },
+    boxOpacity: {
+      type: Number,
+      default: 0.5,
     },
   },
   {

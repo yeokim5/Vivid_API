@@ -74,6 +74,7 @@ function initBackgroundEffect(effectType) {
     case 'gradient':
       createGradientEffect(effectContainer);
       break;
+
     default:
       console.log("Unknown effect type:", effectType);
       return;
@@ -401,4 +402,6 @@ function createGradientEffect(container) {
   const gradientBg = document.createElement('div');
   gradientBg.className = 'gradient-bg';
   container.appendChild(gradientBg);
-} 
+}
+
+ 

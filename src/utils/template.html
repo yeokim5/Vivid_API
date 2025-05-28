@@ -128,68 +128,15 @@
           
           // Create effect based on type
           switch(bgEffect) {
-            case 'blob':
-              createDirectBlobs(container);
-              break;
             case 'firefly':
               createDirectFireflies(container);
               break;
             case 'particles':
               createDirectParticles(container);
               break;
-            case 'gradient':
-              createDirectGradient(container);
-              break;
           }
           
           console.log("Background effect directly injected");
-        }
-        
-        // Create blob effect
-        function createDirectBlobs(container) {
-          const colors = [
-            'rgba(255, 94, 98, 0.95)', 
-            'rgba(255, 153, 102, 0.95)', 
-            'rgba(110, 72, 170, 0.95)', 
-            'rgba(157, 80, 187, 0.95)',
-            'rgba(0, 201, 255, 0.95)'
-          ];
-          
-          // Add style
-          const style = document.createElement('style');
-          style.textContent = `
-            @keyframes blob-float {
-              0%, 100% { transform: translate(0, 0) scale(1); }
-              25% { transform: translate(80px, 80px) scale(1.5); }
-              50% { transform: translate(160px, -80px) scale(1.2); }
-              75% { transform: translate(-80px, 80px) scale(1.4); }
-            }
-          `;
-          container.appendChild(style);
-          
-          // Create blobs
-          for (let i = 0; i < 8; i++) {
-            const blob = document.createElement('div');
-            const size = Math.random() * 400 + 200;
-            const left = Math.random() * 100;
-            const top = Math.random() * 100;
-            
-            blob.style.cssText = `
-              position: absolute !important;
-              width: ${size}px !important;
-              height: ${size}px !important;
-              left: ${left}% !important;
-              top: ${top}% !important;
-              border-radius: 50% !important;
-              background: ${colors[i % colors.length]} !important;
-              filter: blur(60px) !important;
-              opacity: 0.9 !important;
-              animation: blob-float 15s infinite !important;
-              animation-delay: ${Math.random() * -20}s !important;
-            `;
-            
-            container.appendChild(blob);
-          }
         }
         
         // Create firefly effect
@@ -284,34 +231,6 @@
           }
         }
         
-        // Create gradient effect
-        function createDirectGradient(container) {
-          const gradient = document.createElement('div');
-          gradient.style.cssText = `
-            position: absolute !important;
-            top: -50% !important;
-            left: -50% !important;
-            width: 200% !important;
-            height: 200% !important;
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab) !important;
-            background-size: 300% 300% !important;
-            opacity: 0.9 !important;
-            animation: gradient 8s ease infinite !important;
-          `;
-          
-          // Add style
-          const style = document.createElement('style');
-          style.textContent = `
-            @keyframes gradient {
-              0% { background-position: 0% 50%; }
-              50% { background-position: 100% 50%; }
-              100% { background-position: 0% 50%; }
-            }
-          `;
-          container.appendChild(style);
-          container.appendChild(gradient);
-        }
-        
         // Run at multiple times to ensure it works
         setTimeout(injectBackgroundEffect, 500);
         setTimeout(injectBackgroundEffect, 1500);
@@ -350,8 +269,8 @@
           <h1>[Title]</h1>
           <h2>[Subtitle]</h2>
           <div class="author">by [Username]</div>
-          <div class="scroll-indicator" style="font-size: 1.5rem; color: white;">
-            <span class="scroll-text">Scroll</span>
+          <div class="scroll-indicator">
+            <span class="scroll-text" style="color: white; font-size: 1.5rem;">Scroll</span>
             <div class="scroll-arrow"></div>
           </div>
         </header>

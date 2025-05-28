@@ -65,10 +65,26 @@ export const getUserEssays = async (
 
     const essays = await Essay.find({ author: userId })
       .sort({ createdAt: -1 })
-      .select("title subtitle header_background_image createdAt isPublished isPrivate views tags author")
+      .select("title subtitle header_background_image createdAt isPublished isPrivate views tags author titleColor textColor fontFamily backgroundEffect boxBgColor boxOpacity youtubeVideoCode")
       .populate('author', 'name');
 
-    res.status(200).json({ essays });
+    // Add default values for any missing fields
+    const processedEssays = essays.map(essay => {
+      const essayObj = essay.toObject();
+      return {
+        ...essayObj,
+        boxBgColor: essayObj.boxBgColor || "#585858",
+        boxOpacity: essayObj.boxOpacity !== undefined ? essayObj.boxOpacity : 0.5,
+        titleColor: essayObj.titleColor || "#f8f9fa",
+        textColor: essayObj.textColor || "#f8f9fa",
+        fontFamily: essayObj.fontFamily || "Playfair Display",
+        backgroundEffect: essayObj.backgroundEffect || "none"
+      };
+    });
+
+    console.log('API Response - processedEssays[0]:', processedEssays[0]);
+
+    res.status(200).json({ essays: processedEssays });
   } catch (error) {
     console.error("Get user essays error:", error);
     res.status(500).json({ message: "Failed to retrieve essays" });
@@ -82,14 +98,33 @@ export const getEssayById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const essay = await Essay.findById(id);
+    const essay = await Essay.findById(id)
+      .populate('author', 'name')
+      .select("title subtitle header_background_image content createdAt isPublished isPrivate views tags author titleColor textColor fontFamily backgroundEffect boxBgColor boxOpacity youtubeVideoCode");
 
     if (!essay) {
       res.status(404).json({ message: "Essay not found" });
       return;
     }
 
-    res.status(200).json({ essay });
+    // Add default values for any missing fields
+    const essayObj = essay.toObject();
+    const processedEssay = {
+      ...essayObj,
+      boxBgColor: essayObj.boxBgColor || "#585858",
+      boxOpacity: essayObj.boxOpacity !== undefined ? essayObj.boxOpacity : 0.5,
+      titleColor: essayObj.titleColor || "#f8f9fa",
+      textColor: essayObj.textColor || "#f8f9fa",
+      fontFamily: essayObj.fontFamily || "Playfair Display",
+      backgroundEffect: essayObj.backgroundEffect || "none"
+    };
+
+    console.log('API Response - getEssayById:', {
+      boxBgColor: processedEssay.boxBgColor,
+      boxOpacity: processedEssay.boxOpacity
+    });
+
+    res.status(200).json({ essay: processedEssay });
   } catch (error) {
     console.error("Get essay error:", error);
     res.status(500).json({ message: "Failed to retrieve essay" });
@@ -103,7 +138,21 @@ export const updateEssay = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, content, isPublished, isPrivate, tags } = req.body;
+    const { 
+      title, 
+      subtitle,
+      content, 
+      isPublished, 
+      isPrivate, 
+      tags, 
+      titleColor, 
+      textColor, 
+      fontFamily, 
+      backgroundEffect,
+      boxBgColor,
+      boxOpacity,
+      youtubeVideoCode
+    } = req.body;
 
     // Ensure user is authenticated
     if (!req.user) {
@@ -127,11 +176,83 @@ export const updateEssay = async (
     }
 
     // Update fields
-    if (title) essay.title = title;
-    if (content) essay.content = content;
-    if (tags) essay.tags = tags;
+    if (title !== undefined) essay.title = title;
+    if (subtitle !== undefined) essay.subtitle = subtitle;
+    if (content !== undefined) essay.content = content;
+    if (tags !== undefined) essay.tags = tags;
     if (isPublished !== undefined) essay.isPublished = isPublished;
     if (isPrivate !== undefined) essay.isPrivate = isPrivate;
+    if (titleColor !== undefined) essay.titleColor = titleColor;
+    if (textColor !== undefined) essay.textColor = textColor;
+    if (fontFamily !== undefined) essay.fontFamily = fontFamily;
+    if (backgroundEffect !== undefined) essay.backgroundEffect = backgroundEffect;
+    if (boxBgColor !== undefined) essay.boxBgColor = boxBgColor;
+    if (boxOpacity !== undefined) essay.boxOpacity = boxOpacity;
+    if (youtubeVideoCode !== undefined) essay.youtubeVideoCode = youtubeVideoCode;
+
+    // Check if any styling or content properties have changed that would require HTML regeneration
+    const shouldRegenerateHtml = 
+      title !== undefined || 
+      subtitle !== undefined || 
+      content !== undefined || 
+      titleColor !== undefined || 
+      textColor !== undefined || 
+      fontFamily !== undefined || 
+      backgroundEffect !== undefined ||
+      boxBgColor !== undefined ||
+      boxOpacity !== undefined ||
+      youtubeVideoCode !== undefined;
+    
+    if (shouldRegenerateHtml) {
+      // Get the user's name
+      const User = mongoose.model('User');
+      const user = await User.findById(req.user.id || req.user._id);
+      const username = user ? user.name : "Anonymous";
+
+      // Parse the content - handle if content wasn't updated in this request
+      let parsedContent;
+      try {
+        parsedContent = content !== undefined ? JSON.parse(content) : JSON.parse(essay.content);
+      } catch (error) {
+        console.error("Error parsing content:", error);
+        // If we can't parse the content, don't regenerate HTML
+        parsedContent = { sections: [] };
+      }
+
+      // Transform the content to match the expected format
+      const contentData = {
+        title: essay.title,
+        subtitle: essay.subtitle || "",
+        username,
+        header_background_image: essay.header_background_image || "",
+        youtubeVideoCode: essay.youtubeVideoCode || "",
+        // Add styling properties to contentData
+        titleColor: essay.titleColor || "#f8f9fa",
+        textColor: essay.textColor || "#f8f9fa",
+        fontFamily: essay.fontFamily || "Playfair Display",
+        boxBgColor: essay.boxBgColor || "#585858",
+        boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
+        backgroundEffect: essay.backgroundEffect || "none"
+      };
+
+      // Add sections if available
+      if (parsedContent.sections && Array.isArray(parsedContent.sections)) {
+        Object.assign(contentData, parsedContent.sections.reduce((acc: any, section: any, index: number) => {
+          const sectionNum = index + 1;
+          return {
+            ...acc,
+            [`section${sectionNum}`]: section.content,
+            [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+          };
+        }, {}));
+      }
+
+      // Generate HTML from the template
+      const templatePath = path.join(__dirname, "../utils/template.html");
+      const htmlContent = generateHtmlFromTemplate(contentData, templatePath);
+      
+      essay.htmlContent = htmlContent;
+    }
 
     await essay.save();
 
@@ -140,10 +261,18 @@ export const updateEssay = async (
       essay: {
         id: essay._id,
         title: essay.title,
+        subtitle: essay.subtitle,
         content: essay.content,
         isPublished: essay.isPublished,
         isPrivate: essay.isPrivate,
         tags: essay.tags,
+        titleColor: essay.titleColor,
+        textColor: essay.textColor,
+        fontFamily: essay.fontFamily,
+        backgroundEffect: essay.backgroundEffect,
+        boxBgColor: essay.boxBgColor,
+        boxOpacity: essay.boxOpacity,
+        youtubeVideoCode: essay.youtubeVideoCode
       },
     });
   } catch (error) {
@@ -271,7 +400,9 @@ export const createHtmlEssay = async (
       titleColor: titleColor || "#f8f9fa",
       textColor: textColor || "#f8f9fa",
       fontFamily: fontFamily || "Playfair Display",
-      backgroundEffect: backgroundEffect || "none"
+      backgroundEffect: backgroundEffect || "none",
+      boxBgColor: boxBgColor || "#585858",
+      boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5
     });
 
     res.status(201).json({
@@ -292,7 +423,9 @@ export const createHtmlEssay = async (
         titleColor: essay.titleColor,
         textColor: essay.textColor,
         fontFamily: essay.fontFamily,
-        backgroundEffect: essay.backgroundEffect
+        backgroundEffect: essay.backgroundEffect,
+        boxBgColor: essay.boxBgColor,
+        boxOpacity: essay.boxOpacity
       },
     });
   } catch (error) {
@@ -342,6 +475,8 @@ export const renderEssayById = async (
           textColor: essay.textColor || "#f8f9fa",
           fontFamily: essay.fontFamily || "Playfair Display",
           backgroundEffect: essay.backgroundEffect || "none",
+          boxBgColor: essay.boxBgColor || "#585858",
+          boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
           ...JSON.parse(essay.content).sections.reduce((acc: any, section: any, index: number) => {
             const sectionNum = index + 1;
             return {
