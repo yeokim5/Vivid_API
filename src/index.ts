@@ -38,14 +38,33 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL || "http://localhost:3000", "https://*.ngrok-free.app"],
+    origin: function(origin, callback) {
+      const allowedOrigins = [
+        process.env.CLIENT_URL || "http://localhost:3000", 
+        "https://vivid-eight.vercel.app",
+        "https://vivid-eight.vercel.app/"
+      ];
+      
+      // Check if origin is allowed
+      if (!origin || allowedOrigins.some(allowedOrigin => {
+        if (allowedOrigin.includes('*')) {
+          const pattern = new RegExp('^' + allowedOrigin.replace('*', '.*') + '$');
+          return pattern.test(origin);
+        }
+        return allowedOrigin === origin;
+      })) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 console.log(
-  "CORS configured with origin:",
+  "CORS configured with origins including:",
   process.env.CLIENT_URL || "http://localhost:3000"
 );
 
