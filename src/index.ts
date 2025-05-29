@@ -12,6 +12,7 @@ import authRoutes from "./routes/authRoutes";
 import essayRoutes from "./routes/essayRoutes";
 import sectionRoutes from "./routes/sectionRoutes";
 import imageRoutes from "./routes/imageRoutes";
+import creditRoutes from "./routes/creditRoutes";
 import "./config/firebase"; // Import Firebase configuration
 import path from "path";
 import ensureTemplateAssets from "./utils/ensureTemplateAssets";
@@ -37,8 +38,10 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: [process.env.CLIENT_URL || "http://localhost:3000", "https://*.ngrok-free.app"],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 console.log(
@@ -52,21 +55,29 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        imgSrc: ["'self'", "data:", "https:", "blob:", "https://assets.lummi.ai"],
-        connectSrc: ["'self'", "https://api.unsplash.com", "https://assets.lummi.ai", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com", "https://*.stripe.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://js.stripe.com", "https://*.stripe.com"],
+        styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://js.stripe.com", "https://*.stripe.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:", "https://assets.lummi.ai", "https://*.stripe.com"],
+        connectSrc: ["'self'", "https://api.unsplash.com", "https://assets.lummi.ai", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://api.stripe.com", "https://*.stripe.com", "https://*.ngrok-free.app"],
         fontSrc: ["'self'", "data:", "https:", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
-        frameSrc: ["'self'"],
+        frameSrc: ["'self'", "https://js.stripe.com", "https://*.stripe.com", "https://*.stripe.network"],
       },
     },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false
   })
 );
 
 app.use(morgan("dev"));
+
+// Handle webhooks with raw bodies first
+app.use("/api/credits/webhook", express.raw({ type: 'application/json' }));
+
+// Then parse JSON for the rest
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -105,6 +116,8 @@ app.use("/api/sections", sectionRoutes);
 console.log("Section routes registered at /api/sections");
 app.use("/api/images", imageRoutes);
 console.log("Image routes registered at /api/images");
+app.use("/api/credits", creditRoutes);
+console.log("Credit routes registered at /api/credits");
 
 // Serve static files from the uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

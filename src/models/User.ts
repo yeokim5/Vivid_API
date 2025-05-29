@@ -11,6 +11,7 @@ export interface IUser extends Document {
   profilePicture?: string;
   createdAt: Date;
   lastLogin: Date;
+  credits: number;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -44,6 +45,10 @@ const UserSchema = new Schema<IUser>(
     lastLogin: {
       type: Date,
       default: Date.now,
+    },
+    credits: {
+      type: Number,
+      default: 1, // New users get 1 free credit
     },
   },
   {

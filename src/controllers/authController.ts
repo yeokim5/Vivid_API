@@ -73,6 +73,7 @@ export const firebaseLogin = async (
         name: user.name,
         email: user.email,
         profilePicture: user.profilePicture,
+        credits: user.credits,
       },
     });
   } catch (error) {
@@ -131,6 +132,7 @@ export const getCurrentUser = (req: Request, res: Response): void => {
       name: user.name,
       email: user.email,
       profilePicture: user.profilePicture,
+      credits: user.credits,
     });
   } catch (error) {
     console.error("Get current user error:", error);
