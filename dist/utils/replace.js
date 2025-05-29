@@ -76,6 +76,263 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
         htmlTemplate = htmlTemplate.replace(/\[BG_10\]/gi, contentData.section10_image_url || "");
         // Set the background effect
         htmlTemplate = htmlTemplate.replace(/\[BACKGROUND_EFFECT\]/gi, contentData.backgroundEffect || "none");
+        // Add background effects directly based on selection
+        if (contentData.backgroundEffect === "heart") {
+            const heartEffectCode = `
+  <!-- Heart Effect -->
+  <style>
+    .heart {
+      position: fixed;
+      font-size: 1.5rem;
+      top: -1vh;
+      transform: translateY(0);
+      animation: fall 3s linear forwards;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    @keyframes fall {
+      from {
+        transform: translateY(0vh) translateX(-10vw); 
+      }
+      to {
+        transform: translateY(105vh) translateX(10vw); 
+      }
+    }
+  </style>
+  <script>
+    function createHeart() {
+      const heart = document.createElement('div');
+      heart.classList.add('heart');
+      heart.style.left = Math.random() * 100 + "vw";
+      heart.style.animationDuration = Math.random() * 2 + 3 + "s";
+      heart.innerHTML = '💗';
+      document.body.appendChild(heart);
+      
+      setTimeout(() => {
+        heart.remove();
+      }, 5000);
+    }
+
+    // Create hearts continuously
+    setInterval(createHeart, 300);
+  </script>`;
+            // Insert heart effect code before the closing body tag
+            htmlTemplate = htmlTemplate.replace('</body>', `${heartEffectCode}\n</body>`);
+        }
+        else if (contentData.backgroundEffect === "firefly") {
+            const fireflyEffectCode = `
+  <!-- Firefly Effect -->
+  <style>
+    .firefly {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: 0.4vw;
+      height: 0.4vw;
+      margin: -0.2vw 0 0 9.8vw;
+      pointer-events: none;
+      animation: ease 200s alternate infinite;
+      z-index: 5;
+    }
+
+    .firefly::before,
+    .firefly::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform-origin: -10vw;
+    }
+
+    .firefly::before {
+      background: black;
+      opacity: 0.4;
+      animation: drift ease alternate infinite;
+    }
+
+    .firefly::after {
+      background: white;
+      opacity: 0;
+      box-shadow: 0 0 0vw 0vw yellow;
+      animation: drift ease alternate infinite, flash ease infinite;
+    }
+
+    @keyframes drift {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes flash {
+      0%, 30%, 100% {
+        opacity: 0;
+        box-shadow: 0 0 0vw 0vw yellow;
+      }
+      5% {
+        opacity: 1;
+        box-shadow: 0 0 2vw 0.4vw yellow;
+      }
+    }
+  </style>
+  <script>
+    const quantity = 50;
+    for (let i = 1; i <= quantity; i++) {
+      const firefly = document.createElement('div');
+      firefly.className = 'firefly';
+
+      const steps = Math.floor(Math.random() * 12) + 16;
+      const rotationSpeed = Math.floor(Math.random() * 10) + 8;
+      const flashDuration = Math.floor(Math.random() * 6000) + 5000;
+      const flashDelay = Math.floor(Math.random() * 8000) + 500;
+
+      const moveName = \`move\${i}\`;
+      let keyframes = \`@keyframes \${moveName} {\`;
+      for (let step = 0; step <= steps; step++) {
+        const percent = (step * 100) / steps;
+        const x = Math.floor(Math.random() * 100) - 50;
+        const y = Math.floor(Math.random() * 100) - 50;
+        const scale = Math.random() * 0.75 + 0.25;
+        keyframes += \`\${percent}% { transform: translateX(\${x}vw) translateY(\${y}vh) scale(\${scale}); }\`;
+      }
+      keyframes += '}';
+
+      const styleSheet = document.styleSheets[0];
+      styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+
+      firefly.style.animationName = moveName;
+
+      firefly.style.setProperty('--rotationSpeed', \`\${rotationSpeed}s\`);
+      firefly.style.setProperty('--flashDuration', \`\${flashDuration}ms\`);
+      firefly.style.setProperty('--flashDelay', \`\${flashDelay}ms\`);
+
+      firefly.innerHTML = \`
+        <style>
+          .firefly:nth-child(\${i})::before {
+            animation-duration: \${rotationSpeed}s;
+          }
+          .firefly:nth-child(\${i})::after {
+            animation-duration: \${rotationSpeed}s, \${flashDuration}ms;
+            animation-delay: 0ms, \${flashDelay}ms;
+          }
+        </style>
+      \`;
+
+      document.body.appendChild(firefly);
+    }
+  </script>`;
+            // Insert firefly effect code before the closing body tag
+            htmlTemplate = htmlTemplate.replace('</body>', `${fireflyEffectCode}\n</body>`);
+        }
+        else if (contentData.backgroundEffect === "particles") {
+            const particlesEffectCode = `
+  <!-- Particles Effect -->
+  <style>
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 5;
+    }
+    
+    .particle:nth-child(3n) {
+      width: 4px;
+      height: 4px;
+      background-color: rgba(93, 95, 226, 0.8);
+      animation: float 25s infinite ease-in-out;
+      animation-delay: -5s;
+      box-shadow: 0 0 5px rgba(93, 95, 226, 0.5);
+    }
+    
+    .particle:nth-child(4n) {
+      width: 8px;
+      height: 8px;
+      background-color: rgba(255, 107, 139, 0.8);
+      animation: float 20s infinite ease-in-out;
+      animation-delay: -10s;
+      box-shadow: 0 0 5px rgba(255, 107, 139, 0.5);
+    }
+    
+    .particle {
+      width: 6px;
+      height: 6px;
+      background-color: rgba(255, 255, 255, 0.8);
+      animation: float 15s infinite;
+      opacity: 0.6;
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh);
+        opacity: 0;
+      }
+      5% {
+        opacity: 0.6;
+      }
+      95% {
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(-10vh);
+        opacity: 0;
+      }
+    }
+  </style>
+  <script>
+    function createParticles() {
+      const container = document.createElement('div');
+      container.className = 'background-effect-container';
+      container.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 5;";
+      document.body.appendChild(container);
+      
+      // Particle colors (will be set through CSS)
+      const colors = [
+        '#ffffff', // White
+        '#7f7fd5', // Purple
+        '#86a8e7', // Blue
+        '#91eae4'  // Cyan
+      ];
+      
+      // Create particles
+      for (let i = 0; i < 150; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Random positioning across the full width
+        const left = Math.random() * 100;
+        particle.style.left = \`\${left}%\`;
+        
+        // Random starting position - distributed across the full height
+        const bottom = Math.random() * 100;
+        particle.style.bottom = \`\${bottom}%\`;
+        
+        // Add random delay to make movement more natural
+        const delay = Math.random() * 20;
+        particle.style.animationDelay = \`\${delay}s\`;
+        
+        container.appendChild(particle);
+      }
+    }
+
+    // Create particles when the page loads
+    document.addEventListener('DOMContentLoaded', createParticles);
+    
+    // Make function available globally
+    window.initBackgroundEffect = function(effect) {
+      if (effect === 'particles' && !document.querySelector('.background-effect-container')) {
+        console.log("Initializing particles effect");
+        createParticles();
+      }
+    };
+  </script>`;
+            // Insert particles effect code before the closing body tag
+            htmlTemplate = htmlTemplate.replace('</body>', `${particlesEffectCode}\n</body>`);
+        }
         // Add debug logging for background effect
         const debugScript = `
     <script>

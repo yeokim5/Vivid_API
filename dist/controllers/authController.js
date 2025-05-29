@@ -67,6 +67,7 @@ const firebaseLogin = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 profilePicture: user.profilePicture,
+                credits: user.credits,
             },
         });
     }
@@ -110,6 +111,7 @@ const getCurrentUser = (req, res) => {
             name: user.name,
             email: user.email,
             profilePicture: user.profilePicture,
+            credits: user.credits,
         });
     }
     catch (error) {

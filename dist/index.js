@@ -16,6 +16,7 @@ const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const essayRoutes_1 = __importDefault(require("./routes/essayRoutes"));
 const sectionRoutes_1 = __importDefault(require("./routes/sectionRoutes"));
 const imageRoutes_1 = __importDefault(require("./routes/imageRoutes"));
+const creditRoutes_1 = __importDefault(require("./routes/creditRoutes"));
 require("./config/firebase"); // Import Firebase configuration
 const path_1 = __importDefault(require("path"));
 const ensureTemplateAssets_1 = __importDefault(require("./utils/ensureTemplateAssets"));
@@ -34,28 +35,55 @@ console.log("PORT:", process.env.PORT || 5000);
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            process.env.CLIENT_URL || "http://localhost:3000",
+            "https://vivid-eight.vercel.app",
+            "https://vivid-eight.vercel.app/"
+        ];
+        // Check if origin is allowed
+        if (!origin || allowedOrigins.some(allowedOrigin => {
+            if (allowedOrigin.includes('*')) {
+                const pattern = new RegExp('^' + allowedOrigin.replace('*', '.*') + '$');
+                return pattern.test(origin);
+            }
+            return allowedOrigin === origin;
+        })) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-console.log("CORS configured with origin:", process.env.CLIENT_URL || "http://localhost:3000");
+console.log("CORS configured with origins including:", process.env.CLIENT_URL || "http://localhost:3000");
 // Configure Helmet with CSP
 app.use((0, helmet_1.default)({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            imgSrc: ["'self'", "data:", "https:", "blob:", "https://assets.lummi.ai"],
-            connectSrc: ["'self'", "https://api.unsplash.com", "https://assets.lummi.ai", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com", "https://*.stripe.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://js.stripe.com", "https://*.stripe.com"],
+            styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://js.stripe.com", "https://*.stripe.com"],
+            imgSrc: ["'self'", "data:", "https:", "blob:", "https://assets.lummi.ai", "https://*.stripe.com"],
+            connectSrc: ["'self'", "https://api.unsplash.com", "https://assets.lummi.ai", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://api.stripe.com", "https://*.stripe.com", "https://*.ngrok-free.app"],
             fontSrc: ["'self'", "data:", "https:", "https://fonts.gstatic.com"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
-            frameSrc: ["'self'"],
+            frameSrc: ["'self'", "https://js.stripe.com", "https://*.stripe.com", "https://*.stripe.network"],
         },
     },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false
 }));
 app.use((0, morgan_1.default)("dev"));
+// Handle webhooks with raw bodies first
+app.use("/api/credits/webhook", express_1.default.raw({ type: 'application/json' }));
+// Then parse JSON for the rest
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
@@ -76,7 +104,7 @@ app.use(passport_1.default.session());
 console.log("Passport initialized");
 // Welcome route
 app.get("/", (_req, res) => {
-    res.json({ message: "Welcome to MagicEssay API" });
+    res.sendFile(path_1.default.join(__dirname, "../public/index.html"));
 });
 // Routes
 console.log("Registering routes...");
@@ -88,6 +116,8 @@ app.use("/api/sections", sectionRoutes_1.default);
 console.log("Section routes registered at /api/sections");
 app.use("/api/images", imageRoutes_1.default);
 console.log("Image routes registered at /api/images");
+app.use("/api/credits", creditRoutes_1.default);
+console.log("Credit routes registered at /api/credits");
 // Serve static files from the uploads directory
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
 // Serve static files from the public directory with proper MIME types

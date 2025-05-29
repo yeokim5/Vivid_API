@@ -65,6 +65,10 @@ const UserSchema = new mongoose_1.Schema({
         type: Date,
         default: Date.now,
     },
+    credits: {
+        type: Number,
+        default: 1, // New users get 1 free credit
+    },
 }, {
     timestamps: true,
 });
