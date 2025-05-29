@@ -103,7 +103,7 @@ console.log("Passport initialized");
 
 // Welcome route
 app.get("/", (_req: Request, res: Response) => {
-  res.json({ message: "Welcome to MagicEssay API" });
+  res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
 // Routes
