@@ -131,6 +131,47 @@ export const getEssayById = async (
   }
 };
 
+// Helper function to generate HTML content from essay data
+const generateEssayHtml = async (essay: any, username: string = "Anonymous"): Promise<string> => {
+  const contentData = {
+    title: essay.title,
+    subtitle: essay.subtitle || "",
+    username,
+    header_background_image: essay.header_background_image || "",
+    youtubeVideoCode: essay.youtubeVideoCode || "",
+    // Add styling properties to contentData
+    titleColor: essay.titleColor || "#f8f9fa",
+    textColor: essay.textColor || "#f8f9fa",
+    fontFamily: essay.fontFamily || "Playfair Display",
+    boxBgColor: essay.boxBgColor || "#585858",
+    boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
+    backgroundEffect: essay.backgroundEffect || "none"
+  };
+
+  // Add sections if available
+  try {
+    // Handle both string and object content types
+    const parsedContent = typeof essay.content === 'string' ? JSON.parse(essay.content) : essay.content;
+    
+    if (parsedContent.sections && Array.isArray(parsedContent.sections)) {
+      Object.assign(contentData, parsedContent.sections.reduce((acc: any, section: any, index: number) => {
+        const sectionNum = index + 1;
+        return {
+          ...acc,
+          [`section${sectionNum}`]: section.content,
+          [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+        };
+      }, {}));
+    }
+  } catch (error) {
+    console.error("Error parsing content:", error);
+  }
+
+  // Generate HTML from the template
+  const templatePath = path.join(__dirname, "../utils/template.html");
+  return generateHtmlFromTemplate(contentData, templatePath);
+};
+
 // Update essay
 export const updateEssay = async (
   req: AuthRequest,
@@ -138,19 +179,19 @@ export const updateEssay = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { 
-      title, 
+    const {
+      title,
       subtitle,
-      content, 
-      isPublished, 
-      isPrivate, 
-      tags, 
-      titleColor, 
-      textColor, 
-      fontFamily, 
-      backgroundEffect,
+      content,
+      isPublished,
+      isPrivate,
+      tags,
+      titleColor,
+      textColor,
+      fontFamily,
       boxBgColor,
       boxOpacity,
+      backgroundEffect,
       youtubeVideoCode
     } = req.body;
 
@@ -160,34 +201,25 @@ export const updateEssay = async (
       return;
     }
 
-    const userId = req.user.id || req.user._id;
-
     const essay = await Essay.findById(id);
-
     if (!essay) {
       res.status(404).json({ message: "Essay not found" });
       return;
     }
 
-    // Check if user is the author
-    if (essay.author.toString() !== userId.toString()) {
-      res.status(403).json({ message: "Not authorized to update this essay" });
-      return;
-    }
-
-    // Update fields
+    // Update basic fields
     if (title !== undefined) essay.title = title;
     if (subtitle !== undefined) essay.subtitle = subtitle;
     if (content !== undefined) essay.content = content;
-    if (tags !== undefined) essay.tags = tags;
     if (isPublished !== undefined) essay.isPublished = isPublished;
     if (isPrivate !== undefined) essay.isPrivate = isPrivate;
+    if (tags !== undefined) essay.tags = tags;
     if (titleColor !== undefined) essay.titleColor = titleColor;
     if (textColor !== undefined) essay.textColor = textColor;
     if (fontFamily !== undefined) essay.fontFamily = fontFamily;
-    if (backgroundEffect !== undefined) essay.backgroundEffect = backgroundEffect;
     if (boxBgColor !== undefined) essay.boxBgColor = boxBgColor;
     if (boxOpacity !== undefined) essay.boxOpacity = boxOpacity;
+    if (backgroundEffect !== undefined) essay.backgroundEffect = backgroundEffect;
     if (youtubeVideoCode !== undefined) essay.youtubeVideoCode = youtubeVideoCode;
 
     // Check if any styling or content properties have changed that would require HTML regeneration
@@ -209,49 +241,8 @@ export const updateEssay = async (
       const user = await User.findById(req.user.id || req.user._id);
       const username = user ? user.name : "Anonymous";
 
-      // Parse the content - handle if content wasn't updated in this request
-      let parsedContent;
-      try {
-        parsedContent = content !== undefined ? JSON.parse(content) : JSON.parse(essay.content);
-      } catch (error) {
-        console.error("Error parsing content:", error);
-        // If we can't parse the content, don't regenerate HTML
-        parsedContent = { sections: [] };
-      }
-
-      // Transform the content to match the expected format
-      const contentData = {
-        title: essay.title,
-        subtitle: essay.subtitle || "",
-        username,
-        header_background_image: essay.header_background_image || "",
-        youtubeVideoCode: essay.youtubeVideoCode || "",
-        // Add styling properties to contentData
-        titleColor: essay.titleColor || "#f8f9fa",
-        textColor: essay.textColor || "#f8f9fa",
-        fontFamily: essay.fontFamily || "Playfair Display",
-        boxBgColor: essay.boxBgColor || "#585858",
-        boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
-        backgroundEffect: essay.backgroundEffect || "none"
-      };
-
-      // Add sections if available
-      if (parsedContent.sections && Array.isArray(parsedContent.sections)) {
-        Object.assign(contentData, parsedContent.sections.reduce((acc: any, section: any, index: number) => {
-          const sectionNum = index + 1;
-          return {
-            ...acc,
-            [`section${sectionNum}`]: section.content,
-            [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
-          };
-        }, {}));
-      }
-
-      // Generate HTML from the template
-      const templatePath = path.join(__dirname, "../utils/template.html");
-      const htmlContent = generateHtmlFromTemplate(contentData, templatePath);
-      
-      essay.htmlContent = htmlContent;
+      // Generate new HTML content
+      essay.htmlContent = await generateEssayHtml(essay, username);
     }
 
     await essay.save();
@@ -356,53 +347,33 @@ export const createHtmlEssay = async (
     const user = await User.findById(req.user.id || req.user._id);
     const username = user ? user.name : "Anonymous";
 
-    // Transform the content to match the expected format
-    const contentData = {
-      title,
-      subtitle: subtitle || "",
-      username,
-      header_background_image: header_background_image || "",
-      youtubeVideoCode: youtubeVideoCode || "",
-      // Add styling properties to contentData
-      titleColor: titleColor || "#f8f9fa",
-      textColor: textColor || "#f8f9fa",
-      fontFamily: fontFamily || "Playfair Display",
-      boxBgColor: boxBgColor || "#585858",
-      boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5,
-      backgroundEffect: backgroundEffect || "none",
-      ...content.sections.reduce((acc: any, section: any, index: number) => {
-        const sectionNum = index + 1;
-        return {
-          ...acc,
-          [`section${sectionNum}`]: section.content,
-          [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
-        };
-      }, {})
-    };
-
-    // Generate HTML from the template
-    const templatePath = path.join(__dirname, "../utils/template.html");
-    const htmlContent = generateHtmlFromTemplate(contentData, templatePath);
-
-    // Save the generated HTML content
-    const essay = await Essay.create({
+    // Create essay object
+    const essayData = {
       title,
       subtitle: subtitle || "",
       header_background_image: header_background_image || "",
       content: JSON.stringify(content),
       author: req.user.id || req.user._id,
       tags: [],
-      htmlContent,
       youtubeVideoCode: youtubeVideoCode || "",
       isPublished: true,
       isPrivate: isPrivate || false,
-      // Save styling properties in the essay
+      // Save styling properties
       titleColor: titleColor || "#f8f9fa",
       textColor: textColor || "#f8f9fa",
       fontFamily: fontFamily || "Playfair Display",
       backgroundEffect: backgroundEffect || "none",
       boxBgColor: boxBgColor || "#585858",
       boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5
+    };
+
+    // Generate HTML content
+    const htmlContent = await generateEssayHtml({ ...essayData, content }, username);
+
+    // Create essay with generated HTML
+    const essay = await Essay.create({
+      ...essayData,
+      htmlContent
     });
 
     res.status(201).json({
@@ -419,7 +390,6 @@ export const createHtmlEssay = async (
         tags: essay.tags,
         isPublished: essay.isPublished,
         isPrivate: essay.isPrivate,
-        // Include styling properties in the response
         titleColor: essay.titleColor,
         textColor: essay.textColor,
         fontFamily: essay.fontFamily,
@@ -454,43 +424,18 @@ export const renderEssayById = async (
 
     let htmlContent = essay.htmlContent;
 
-    // If htmlContent doesn't exist, generate it from the content
+    // If htmlContent doesn't exist, generate it
     if (!htmlContent) {
       try {
         // Handle the populated author field safely
         let username = "Anonymous";
         if (essay.author) {
-          const authorDoc = essay.author as any; // Cast to any to access name property
+          const authorDoc = essay.author as any;
           username = authorDoc.name || "Anonymous";
         }
         
-        const contentData = {
-          title: essay.title,
-          subtitle: essay.subtitle || "",
-          username,
-          header_background_image: essay.header_background_image || "",
-          youtubeVideoCode: essay.youtubeVideoCode || "",
-          // Include styling properties
-          titleColor: essay.titleColor || "#f8f9fa",
-          textColor: essay.textColor || "#f8f9fa",
-          fontFamily: essay.fontFamily || "Playfair Display",
-          backgroundEffect: essay.backgroundEffect || "none",
-          boxBgColor: essay.boxBgColor || "#585858",
-          boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
-          ...JSON.parse(essay.content).sections.reduce((acc: any, section: any, index: number) => {
-            const sectionNum = index + 1;
-            return {
-              ...acc,
-              [`section${sectionNum}`]: section.content,
-              [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
-            };
-          }, {})
-        };
-
-        // Generate HTML from the template
-        const templatePath = path.join(__dirname, "../utils/template.html");
-        htmlContent = generateHtmlFromTemplate(contentData, templatePath);
-
+        htmlContent = await generateEssayHtml(essay, username);
+        
         // Save the generated HTML content
         essay.htmlContent = htmlContent;
         await essay.save();
@@ -500,18 +445,6 @@ export const renderEssayById = async (
         return;
       }
     }
-
-    // Set Content Security Policy headers
-    res.setHeader("Content-Security-Policy", "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-      "img-src 'self' data: https: blob: https://assets.lummi.ai https://images.stockcake.com https://*.stockcake.com; " +
-      "connect-src 'self' https://api.unsplash.com https://assets.lummi.ai https://fonts.googleapis.com https://fonts.gstatic.com; " +
-      "font-src 'self' data: https: https://fonts.gstatic.com; " +
-      "object-src 'none'; " +
-      "media-src 'self'; " +
-      "frame-src 'self' https://www.youtube.com https://youtube.com https://*.youtube.com;");
 
     // Send HTML directly
     res.setHeader("Content-Type", "text/html");

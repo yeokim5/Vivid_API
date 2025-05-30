@@ -38,26 +38,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: function(origin, callback) {
-      const allowedOrigins = [
-        process.env.CLIENT_URL || "http://localhost:3000", 
-        "https://vivid-eight.vercel.app",
-        "https://vivid-eight.vercel.app/"
-      ];
-      
-      // Check if origin is allowed
-      if (!origin || allowedOrigins.some(allowedOrigin => {
-        if (allowedOrigin.includes('*')) {
-          const pattern = new RegExp('^' + allowedOrigin.replace('*', '.*') + '$');
-          return pattern.test(origin);
-        }
-        return allowedOrigin === origin;
-      })) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: process.env.CLIENT_URL || 'https://vivid-eight.vercel.app',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -67,6 +48,15 @@ console.log(
   "CORS configured with origins including:",
   process.env.CLIENT_URL || "http://localhost:3000"
 );
+
+// Add security headers middleware
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self' https://vivid-eight.vercel.app https://vividapi-production.up.railway.app; frame-ancestors 'self' https://vivid-eight.vercel.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vivid-eight.vercel.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vivid-eight.vercel.app; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://www.youtube.com; frame-src 'self' https://www.youtube.com;");
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Configure Helmet with CSP
 app.use(
@@ -156,17 +146,9 @@ app.use(express.static(path.join(__dirname, "../public"), {
   }
 }));
 
-// Serve static files for the essay templates
-app.use("/styles", express.static(path.join(__dirname, "../../front/public/styles")));
-app.use("/js", express.static(path.join(__dirname, "../../front/public/js"), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.mjs')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    }
-  }
-}));
+// Remove frontend static file serving since they are now served from the frontend deployment
+// app.use("/styles", express.static(path.join(__dirname, "../../front/public/styles")));
+// app.use("/js", express.static(path.join(__dirname, "../../front/public/js")));
 
 // Add a new route for serving module scripts with correct MIME type
 app.get('*.js', (req, res, next) => {
@@ -177,6 +159,12 @@ app.get('*.js', (req, res, next) => {
 // Add a route for serving ES modules with correct MIME type
 app.get('*.mjs', (req, res, next) => {
   res.set('Content-Type', 'application/javascript');
+  next();
+});
+
+// Add a route for serving CSS files with correct MIME type
+app.get('*.css', (req, res, next) => {
+  res.set('Content-Type', 'text/css');
   next();
 });
 
