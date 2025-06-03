@@ -6,7 +6,7 @@
  */
 export function processText(
   text: string,
-  sectionCount: number = 10
+  sectionCount: number = 9
 ): Record<string, string> {
   // 1. Preserve original paragraph structure while cleaning up excessive whitespace
   const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
@@ -51,7 +51,7 @@ export function processText(
     return distributeContentUnits(sentences, sectionCount);
   }
 
-  // 7. If all else fails, use a character-based approach to ensure 10 sections
+  // 7. If all else fails, use a character-based approach to ensure 9 sections
   return distributeTextByCharacters(cleanText, sectionCount);
 }
 
