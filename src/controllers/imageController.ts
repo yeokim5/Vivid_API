@@ -1,19 +1,8 @@
 import { Request, Response } from "express";
-import { getImageUrls, cleanup } from "../utils/image_getter";
+import { getImageUrls } from "../utils/image_getter";
 
 // Cache to store ongoing image fetches
 const ongoingFetches: Map<string, Promise<any>> = new Map();
-
-// Handle cleanup on server shutdown
-process.on('SIGTERM', async () => {
-  await cleanup();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  await cleanup();
-  process.exit(0);
-});
 
 export const searchImages = async (req: Request, res: Response) => {
   const sectionId = req.body.sectionId;
@@ -41,7 +30,7 @@ export const searchImages = async (req: Request, res: Response) => {
       // Start a new fetch and store it in the cache
       const fetchPromise = getImageUrls(prompt, maxImages || 10);
       ongoingFetches.set(cacheKey!, fetchPromise);
-      
+
       try {
         const result = await fetchPromise;
         ongoingFetches.delete(cacheKey!);
@@ -63,16 +52,6 @@ export const searchImages = async (req: Request, res: Response) => {
       message: "Server error occurred",
       error: errorMessage,
     });
-  }
-};
-
-// Handle request cancellation
-export const cleanupOngoingFetches = (sectionId?: string) => {
-  if (sectionId) {
-    const cacheKey = `${sectionId}`;
-    ongoingFetches.delete(cacheKey);
-  } else {
-    ongoingFetches.clear();
   }
 };
 

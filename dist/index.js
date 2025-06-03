@@ -137,18 +137,9 @@ app.use(express_1.default.static(path_1.default.join(__dirname, "../public"), {
         }
     }
 }));
-// Serve static files for the essay templates
-app.use("/styles", express_1.default.static(path_1.default.join(__dirname, "../../front/public/styles")));
-app.use("/js", express_1.default.static(path_1.default.join(__dirname, "../../front/public/js"), {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
-        }
-        else if (path.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript');
-        }
-    }
-}));
+// Remove frontend static file serving since they are now served from the frontend deployment
+// app.use("/styles", express.static(path.join(__dirname, "../../front/public/styles")));
+// app.use("/js", express.static(path.join(__dirname, "../../front/public/js")));
 // Add a new route for serving module scripts with correct MIME type
 app.get('*.js', (req, res, next) => {
     res.set('Content-Type', 'application/javascript');
@@ -157,6 +148,11 @@ app.get('*.js', (req, res, next) => {
 // Add a route for serving ES modules with correct MIME type
 app.get('*.mjs', (req, res, next) => {
     res.set('Content-Type', 'application/javascript');
+    next();
+});
+// Add a route for serving CSS files with correct MIME type
+app.get('*.css', (req, res, next) => {
+    res.set('Content-Type', 'text/css');
     next();
 });
 // List all registered routes

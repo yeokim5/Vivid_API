@@ -9,6 +9,7 @@ const nlpChunk_1 = require("../utils/nlpChunk");
 const backgroundImage_1 = __importDefault(require("../utils/backgroundImage"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const image_getter_1 = require("../utils/image_getter");
 // Initialize the OpenAI client with API key
 const openai = new openai_1.default({
     apiKey: process.env.OPENAI_API_KEY,
@@ -54,6 +55,14 @@ const divideSongIntoSections = async (req, res) => {
         else {
             parsedBackgroundImages = backgroundImages;
         }
+        // Fetch header background image if present
+        let header_background_image_url = "";
+        if (parsedBackgroundImages.header_background_image) {
+            const headerResult = await (0, image_getter_1.getImageUrls)(parsedBackgroundImages.header_background_image, 1);
+            if (headerResult.success && headerResult.urls.length > 0) {
+                header_background_image_url = headerResult.urls[0];
+            }
+        }
         // Combine sections with their background images
         const sectionData = [];
         // Ensure we create exactly 10 sections
@@ -73,6 +82,7 @@ const divideSongIntoSections = async (req, res) => {
                 title,
                 subtitle: parsedBackgroundImages.subtitle || "",
                 header_background_image: parsedBackgroundImages.header_background_image || "",
+                header_background_image_url,
                 sections: sectionData,
             },
         });

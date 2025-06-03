@@ -4,6 +4,7 @@ import { processText } from "../utils/nlpChunk";
 import generateBackgroundImages from "../utils/backgroundImage";
 import fs from "fs";
 import path from "path";
+import { getImageUrls } from "../utils/image_getter";
 
 // Initialize the OpenAI client with API key
 const openai = new OpenAI({
@@ -59,6 +60,18 @@ export const divideSongIntoSections = async (req: Request, res: Response) => {
       parsedBackgroundImages = backgroundImages;
     }
 
+    // Fetch header background image if present
+    let header_background_image_url = "";
+    if (parsedBackgroundImages.header_background_image) {
+      const headerResult = await getImageUrls(
+        parsedBackgroundImages.header_background_image,
+        1
+      );
+      if (headerResult.success && headerResult.urls.length > 0) {
+        header_background_image_url = headerResult.urls[0];
+      }
+    }
+
     // Combine sections with their background images
     const sectionData = [];
 
@@ -81,7 +94,9 @@ export const divideSongIntoSections = async (req: Request, res: Response) => {
       data: {
         title,
         subtitle: parsedBackgroundImages.subtitle || "",
-        header_background_image: parsedBackgroundImages.header_background_image || "",
+        header_background_image:
+          parsedBackgroundImages.header_background_image || "",
+        header_background_image_url,
         sections: sectionData,
       },
     });

@@ -336,14 +336,16 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
         // Add debug logging for background effect
         const debugScript = `
     <script>
-      console.log("Background effect replaced to:", "${contentData.backgroundEffect || "none"}");
+      // Define backgroundEffect in the global scope
+      window.backgroundEffect = "${contentData.backgroundEffect || "none"}";
+      console.log("Background effect replaced to:", window.backgroundEffect);
       
       // Add a fallback initialization for the background effect
       document.addEventListener("DOMContentLoaded", function() {
         setTimeout(function() {
           if (typeof initBackgroundEffect === 'function' && !document.querySelector('.background-effect-container')) {
-            console.log("Fallback: Initializing background effect from replace.ts:", "${contentData.backgroundEffect || "none"}");
-            initBackgroundEffect("${contentData.backgroundEffect || "none"}");
+            console.log("Fallback: Initializing background effect from replace.ts:", window.backgroundEffect);
+            initBackgroundEffect(window.backgroundEffect);
           }
           
           // Additional check to fix z-index issues
@@ -382,8 +384,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
           }, 1500);
         }, 1000);
       });
-    </script>
-    `;
+    </script>`;
         // Insert debug script before the closing body tag
         htmlTemplate = htmlTemplate.replace('</body>', `${debugScript}\n</body>`);
         // Add content to the quotes for each section

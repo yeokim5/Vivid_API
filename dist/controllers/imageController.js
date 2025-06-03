@@ -1,18 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.processBackgroundImageSuggestions = exports.cleanupOngoingFetches = exports.searchImages = void 0;
+exports.processBackgroundImageSuggestions = exports.searchImages = void 0;
 const image_getter_1 = require("../utils/image_getter");
 // Cache to store ongoing image fetches
 const ongoingFetches = new Map();
-// Handle cleanup on server shutdown
-process.on('SIGTERM', async () => {
-    await (0, image_getter_1.cleanup)();
-    process.exit(0);
-});
-process.on('SIGINT', async () => {
-    await (0, image_getter_1.cleanup)();
-    process.exit(0);
-});
 const searchImages = async (req, res) => {
     const sectionId = req.body.sectionId;
     const cacheKey = sectionId ? `${req.body.prompt}_${sectionId}` : null;
@@ -60,17 +51,6 @@ const searchImages = async (req, res) => {
     }
 };
 exports.searchImages = searchImages;
-// Handle request cancellation
-const cleanupOngoingFetches = (sectionId) => {
-    if (sectionId) {
-        const cacheKey = `${sectionId}`;
-        ongoingFetches.delete(cacheKey);
-    }
-    else {
-        ongoingFetches.clear();
-    }
-};
-exports.cleanupOngoingFetches = cleanupOngoingFetches;
 const processBackgroundImageSuggestions = async (req, res) => {
     try {
         const { suggestions } = req.body;

@@ -41,22 +41,7 @@ export async function generateBackgroundImages(
         },
         {
           role: "user",
-          content: `For the following essay, first generate a compelling subtitle that captures the essence of the content, and then suggest appropriate background images for each section.
-
-Title: ${content.title}
-
-${sectionsInput}
-
-Format your response as a valid JSON object like this:
-{
-  "subtitle": "A compelling subtitle that captures the essence of the essay",
-  "header_background_image": "description of an appropriate background image for the header section",
-  "section_1_background_image": "description of appropriate background image",
-  "section_2_background_image": "description of appropriate background image",
-  ...and so on for all sections
-}
-
-Only return the JSON object, nothing else.`,
+          content: `For the following essay, first generate a compelling subtitle that captures the essence of the content, then suggest an appropriate background image for the header (as "header_background_image"), and then suggest appropriate background images for each section.\n\nTitle: ${content.title}\n\n${sectionsInput}\n\nFormat your response as a valid JSON object like this:\n{\n  "subtitle": "A compelling subtitle that captures the essence of the essay",\n  "header_background_image": "description of an appropriate background image for the header section",\n  "section_1_background_image": "description of appropriate background image",\n  "section_2_background_image": "description of appropriate background image",\n  ...and so on for all sections\n}\n\nOnly return the JSON object, nothing else.`,
         },
       ],
       temperature: 0.7,
@@ -74,9 +59,9 @@ Only return the JSON object, nothing else.`,
     try {
       parsedResponse = JSON.parse(backgroundImagesJSON);
       // Remove quotes from all values
-      Object.keys(parsedResponse).forEach(key => {
-        if (typeof parsedResponse[key] === 'string') {
-          parsedResponse[key] = parsedResponse[key].replace(/^"|"$/g, '');
+      Object.keys(parsedResponse).forEach((key) => {
+        if (typeof parsedResponse[key] === "string") {
+          parsedResponse[key] = parsedResponse[key].replace(/^"|"$/g, "");
         }
       });
       return parsedResponse;
