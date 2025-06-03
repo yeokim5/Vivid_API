@@ -52,7 +52,8 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
   background: rgba(${parseInt(boxBgColor.slice(1, 3), 16)}, ${parseInt(boxBgColor.slice(3, 5), 16)}, ${parseInt(boxBgColor.slice(5, 7), 16)}, ${boxOpacity});`;
         htmlTemplate = htmlTemplate.replace(boxBgStyleRegex, boxBgReplacement);
         // Replace YouTube video code
-        if (contentData.youtubeVideoCode && contentData.youtubeVideoCode.trim() !== "") {
+        if (contentData.youtubeVideoCode &&
+            contentData.youtubeVideoCode.trim() !== "") {
             // Replace the YouTube video code
             htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, contentData.youtubeVideoCode);
             // Make sure the music icon is visible
@@ -73,7 +74,6 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
         htmlTemplate = htmlTemplate.replace(/\[BG_7\]/gi, contentData.section7_image_url || "");
         htmlTemplate = htmlTemplate.replace(/\[BG_8\]/gi, contentData.section8_image_url || "");
         htmlTemplate = htmlTemplate.replace(/\[BG_9\]/gi, contentData.section9_image_url || "");
-        htmlTemplate = htmlTemplate.replace(/\[BG_10\]/gi, contentData.section10_image_url || "");
         // Set the background effect
         htmlTemplate = htmlTemplate.replace(/\[BACKGROUND_EFFECT\]/gi, contentData.backgroundEffect || "none");
         // Add background effects directly based on selection
@@ -118,7 +118,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
     setInterval(createHeart, 300);
   </script>`;
             // Insert heart effect code before the closing body tag
-            htmlTemplate = htmlTemplate.replace('</body>', `${heartEffectCode}\n</body>`);
+            htmlTemplate = htmlTemplate.replace("</body>", `${heartEffectCode}\n</body>`);
         }
         else if (contentData.backgroundEffect === "firefly") {
             const fireflyEffectCode = `
@@ -226,7 +226,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
     }
   </script>`;
             // Insert firefly effect code before the closing body tag
-            htmlTemplate = htmlTemplate.replace('</body>', `${fireflyEffectCode}\n</body>`);
+            htmlTemplate = htmlTemplate.replace("</body>", `${fireflyEffectCode}\n</body>`);
         }
         else if (contentData.backgroundEffect === "particles") {
             const particlesEffectCode = `
@@ -331,7 +331,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
     };
   </script>`;
             // Insert particles effect code before the closing body tag
-            htmlTemplate = htmlTemplate.replace('</body>', `${particlesEffectCode}\n</body>`);
+            htmlTemplate = htmlTemplate.replace("</body>", `${particlesEffectCode}\n</body>`);
         }
         // Add debug logging for background effect
         const debugScript = `
@@ -386,15 +386,15 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
       });
     </script>`;
         // Insert debug script before the closing body tag
-        htmlTemplate = htmlTemplate.replace('</body>', `${debugScript}\n</body>`);
+        htmlTemplate = htmlTemplate.replace("</body>", `${debugScript}\n</body>`);
         // Add content to the quotes for each section
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 9; i++) {
             const sectionKey = `section${i}`;
             const quoteContent = contentData[sectionKey];
             if (quoteContent) {
                 // Find the line div for this section and replace content
-                const lineSelector = new RegExp(`<div class="quote quote-${i}">\\s*<div class="line">.*?<\\/div>`, "s");
-                const replacement = `<div class="quote quote-${i}">\n            <div class="line">${quoteContent}</div>`;
+                const lineSelector = new RegExp(`<div class=\"quote quote-${i}\">\\s*<div class=\"line\">.*?<\\/div>`, "s");
+                const replacement = `<div class=\"quote quote-${i}\">\n            <div class=\"line\">${quoteContent}</div>`;
                 htmlTemplate = htmlTemplate.replace(lineSelector, replacement);
             }
         }
@@ -402,6 +402,6 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
     }
     catch (error) {
         console.error("Error generating HTML from template:", error);
-        throw error;
+        return "";
     }
 }

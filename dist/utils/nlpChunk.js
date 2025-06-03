@@ -6,7 +6,7 @@ exports.processText = processText;
  * Splits input text into contextually balanced sections, preserving natural
  * paragraph breaks when possible and ensuring more meaningful content division.
  */
-function processText(text, sectionCount = 10) {
+function processText(text, sectionCount = 9) {
     // 1. Preserve original paragraph structure while cleaning up excessive whitespace
     const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
     // 2. Split by paragraphs first (for natural content breaks)
@@ -41,7 +41,7 @@ function processText(text, sectionCount = 10) {
     if (sentences.length >= sectionCount) {
         return distributeContentUnits(sentences, sectionCount);
     }
-    // 7. If all else fails, use a character-based approach to ensure 10 sections
+    // 7. If all else fails, use a character-based approach to ensure 9 sections
     return distributeTextByCharacters(cleanText, sectionCount);
 }
 /**

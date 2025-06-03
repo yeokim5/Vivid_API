@@ -34,7 +34,7 @@ async function generateBackgroundImages(inputData) {
                 },
                 {
                     role: "user",
-                    content: `For the following essay, first generate a compelling subtitle that captures the essence of the content, and then suggest appropriate background images for each section.\n\nTitle: ${content.title}\n\n${sectionsInput}\n\nFormat your response as a valid JSON object like this:\n{\n  \"subtitle\": \"A compelling subtitle that captures the essence of the essay\",\n  \"section_1_background_image\": \"description of appropriate background image\",\n  \"section_2_background_image\": \"description of appropriate background image\",\n  ...and so on for all sections\n}\n\nOnly return the JSON object, nothing else.`,
+                    content: `For the following essay, first generate a compelling subtitle that captures the essence of the content, then suggest an appropriate background image for the header (as "header_background_image"), and then suggest appropriate background images for each section.\n\nTitle: ${content.title}\n\n${sectionsInput}\n\nFormat your response as a valid JSON object like this:\n{\n  "subtitle": "A compelling subtitle that captures the essence of the essay",\n  "header_background_image": "description of an appropriate background image for the header section",\n  "section_1_background_image": "description of appropriate background image",\n  "section_2_background_image": "description of appropriate background image",\n  ...and so on for all sections\n}\n\nOnly return the JSON object, nothing else.`,
                 },
             ],
             temperature: 0.7,

@@ -14,21 +14,25 @@ const image_getter_1 = require("../utils/image_getter");
 const openai = new openai_1.default({
     apiKey: process.env.OPENAI_API_KEY,
 });
-// Always use exactly 10 sections
-const SECTION_COUNT = 10;
+// Always use exactly 9 sections
+const SECTION_COUNT = 9;
+// Helper sleep function
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 const divideSongIntoSections = async (req, res) => {
     try {
         const { title, content } = req.body;
         if (!title || !content) {
             return res.status(400).json({ error: "Title and content are required" });
         }
-        // Step 1: Divide content into exactly 10 sections using NLP
+        // Step 1: Divide content into exactly 9 sections using NLP
         const sections = (0, nlpChunk_1.processText)(content, SECTION_COUNT);
         console.log("NLP Sections:", sections);
-        // Ensure we have exactly 10 sections
+        // Ensure we have exactly 9 sections
         const sectionKeys = Object.keys(sections);
         if (sectionKeys.length < SECTION_COUNT) {
-            // If we have fewer than 10 sections, add empty ones to reach 10
+            // If we have fewer than 9 sections, add empty ones to reach 9
             for (let i = sectionKeys.length + 1; i <= SECTION_COUNT; i++) {
                 sections[`section_${i}`] =
                     "Content for this section will be generated.";
@@ -57,22 +61,93 @@ const divideSongIntoSections = async (req, res) => {
         }
         // Fetch header background image if present
         let header_background_image_url = "";
+        let lummiRequestCount = 0;
         if (parsedBackgroundImages.header_background_image) {
-            const headerResult = await (0, image_getter_1.getImageUrls)(parsedBackgroundImages.header_background_image, 1);
-            if (headerResult.success && headerResult.urls.length > 0) {
-                header_background_image_url = headerResult.urls[0];
+            let headerPrompt = "";
+            let headerDescription = "";
+            if (typeof parsedBackgroundImages.header_background_image === "object") {
+                headerPrompt =
+                    parsedBackgroundImages.header_background_image.keyword || "";
+                headerDescription =
+                    parsedBackgroundImages.header_background_image.description || "";
+            }
+            else if (typeof parsedBackgroundImages.header_background_image === "string") {
+                headerPrompt = parsedBackgroundImages.header_background_image;
+            }
+            if (headerPrompt) {
+                let headerResult = await (0, image_getter_1.getImageUrls)(headerPrompt, 1);
+                lummiRequestCount++;
+                if (!headerResult.success || headerResult.urls.length === 0) {
+                    // Fallback: try description
+                    if (headerDescription) {
+                        headerResult = await (0, image_getter_1.getImageUrls)(headerDescription, 1);
+                        lummiRequestCount++;
+                    }
+                }
+                if (headerResult.success && headerResult.urls.length > 0) {
+                    header_background_image_url = headerResult.urls[0];
+                }
+                else {
+                    // Fallback: use a default placeholder image
+                    header_background_image_url =
+                        "https://assets.lummi.ai/assets/default-placeholder.jpg";
+                }
             }
         }
         // Combine sections with their background images
         const sectionData = [];
-        // Ensure we create exactly 10 sections
+        // Ensure we create exactly 9 sections
         for (let i = 1; i <= SECTION_COUNT; i++) {
+            // Throttle: after 10 requests, wait 60 seconds before the 11th
+            if (lummiRequestCount === 10) {
+                console.log("[LUMMI] Rate limit reached. Waiting 60 seconds before next request...");
+                await sleep(60000);
+                lummiRequestCount = 0; // Reset for safety (if you ever have more than 11 images)
+            }
             const key = `section_${i}`;
             const imageKey = `section_${i}_background_image`;
+            let sectionPrompt = "";
+            let sectionDescription = "";
+            if (parsedBackgroundImages[imageKey]) {
+                if (typeof parsedBackgroundImages[imageKey] === "object") {
+                    sectionPrompt = parsedBackgroundImages[imageKey].keyword || "";
+                    sectionDescription =
+                        parsedBackgroundImages[imageKey].description || "";
+                }
+                else if (typeof parsedBackgroundImages[imageKey] === "string") {
+                    sectionPrompt = parsedBackgroundImages[imageKey];
+                }
+            }
+            // Try keyword first, then description, then fallback
+            let sectionImageUrl = "";
+            if (sectionPrompt) {
+                let sectionResult = await (0, image_getter_1.getImageUrls)(sectionPrompt, 1);
+                lummiRequestCount++;
+                if (!sectionResult.success || sectionResult.urls.length === 0) {
+                    // Fallback: try description
+                    if (sectionDescription) {
+                        sectionResult = await (0, image_getter_1.getImageUrls)(sectionDescription, 1);
+                        lummiRequestCount++;
+                    }
+                }
+                if (sectionResult.success && sectionResult.urls.length > 0) {
+                    sectionImageUrl = sectionResult.urls[0];
+                }
+                else {
+                    // Fallback: use a default placeholder image
+                    sectionImageUrl =
+                        "https://assets.lummi.ai/assets/default-placeholder.jpg";
+                }
+            }
+            else {
+                sectionImageUrl =
+                    "https://assets.lummi.ai/assets/default-placeholder.jpg";
+            }
             sectionData.push({
                 section_number: i,
                 content: sections[key] || "Content for this section will be generated.",
-                background_image: parsedBackgroundImages[imageKey] || "Generic landscape background",
+                background_image: sectionPrompt || sectionDescription || "Generic landscape background",
+                selected_image_url: sectionImageUrl,
             });
         }
         // Return combined data to frontend

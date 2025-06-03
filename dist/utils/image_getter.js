@@ -38,6 +38,7 @@ async function getImageUrls(prompt, maxImages = 1) {
         if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
             // Return the image URLs (use .url property)
             const urls = data.data.map((img) => img.url).filter(Boolean);
+            console.log(`[LUMMI] Found ${urls.length} image URL(s):`, urls);
             return {
                 success: true,
                 message: `Found ${urls.length} image URLs from Lummi API`,
@@ -45,6 +46,7 @@ async function getImageUrls(prompt, maxImages = 1) {
             };
         }
         else {
+            console.log(`[LUMMI] No images found for prompt: "${prompt}"`);
             return {
                 success: true,
                 message: "No images found",
