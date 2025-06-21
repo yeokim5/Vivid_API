@@ -103,6 +103,35 @@
       .music-icon {
         z-index: 100; /* Always on top */
       }
+
+      /* Fix music player positioning - Override all styles */
+      .music-player-container {
+        position: fixed !important;
+        top: 1rem !important;
+        right: 1rem !important;
+        left: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        justify-content: flex-start !important;
+        gap: 0.5rem !important;
+        width: auto !important;
+        z-index: 1000 !important;
+      }
+
+      .music-player-container[style*="display: block"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+      }
+
+      .music-icon {
+        align-self: flex-end !important;
+        margin-left: auto !important;
+        position: relative !important;
+        right: 0 !important;
+        left: auto !important;
+      }
     </style>
   </head>
   <body>
