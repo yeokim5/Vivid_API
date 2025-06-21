@@ -58,9 +58,9 @@ const getUserEssays = async (req, res) => {
         const essays = await Essay_1.default.find({ author: userId })
             .sort({ createdAt: -1 })
             .select("title subtitle header_background_image createdAt isPublished isPrivate views tags author titleColor textColor fontFamily backgroundEffect boxBgColor boxOpacity youtubeVideoCode")
-            .populate('author', 'name');
+            .populate("author", "name");
         // Add default values for any missing fields
-        const processedEssays = essays.map(essay => {
+        const processedEssays = essays.map((essay) => {
             const essayObj = essay.toObject();
             return {
                 ...essayObj,
@@ -69,10 +69,10 @@ const getUserEssays = async (req, res) => {
                 titleColor: essayObj.titleColor || "#f8f9fa",
                 textColor: essayObj.textColor || "#f8f9fa",
                 fontFamily: essayObj.fontFamily || "Playfair Display",
-                backgroundEffect: essayObj.backgroundEffect || "none"
+                backgroundEffect: essayObj.backgroundEffect || "none",
             };
         });
-        console.log('API Response - processedEssays[0]:', processedEssays[0]);
+        console.log("API Response - processedEssays[0]:", processedEssays[0]);
         res.status(200).json({ essays: processedEssays });
     }
     catch (error) {
@@ -86,7 +86,7 @@ const getEssayById = async (req, res) => {
     try {
         const { id } = req.params;
         const essay = await Essay_1.default.findById(id)
-            .populate('author', 'name')
+            .populate("author", "name")
             .select("title subtitle header_background_image content createdAt isPublished isPrivate views tags author titleColor textColor fontFamily backgroundEffect boxBgColor boxOpacity youtubeVideoCode");
         if (!essay) {
             res.status(404).json({ message: "Essay not found" });
@@ -101,11 +101,11 @@ const getEssayById = async (req, res) => {
             titleColor: essayObj.titleColor || "#f8f9fa",
             textColor: essayObj.textColor || "#f8f9fa",
             fontFamily: essayObj.fontFamily || "Playfair Display",
-            backgroundEffect: essayObj.backgroundEffect || "none"
+            backgroundEffect: essayObj.backgroundEffect || "none",
         };
-        console.log('API Response - getEssayById:', {
+        console.log("API Response - getEssayById:", {
             boxBgColor: processedEssay.boxBgColor,
-            boxOpacity: processedEssay.boxOpacity
+            boxOpacity: processedEssay.boxOpacity,
         });
         res.status(200).json({ essay: processedEssay });
     }
@@ -129,21 +129,30 @@ const generateEssayHtml = async (essay, username = "Anonymous") => {
         fontFamily: essay.fontFamily || "Playfair Display",
         boxBgColor: essay.boxBgColor || "#585858",
         boxOpacity: essay.boxOpacity !== undefined ? essay.boxOpacity : 0.5,
-        backgroundEffect: essay.backgroundEffect || "none"
+        backgroundEffect: essay.backgroundEffect || "none",
     };
     // Add sections if available
     try {
         // Handle both string and object content types
-        const parsedContent = typeof essay.content === 'string' ? JSON.parse(essay.content) : essay.content;
+        const parsedContent = typeof essay.content === "string"
+            ? JSON.parse(essay.content)
+            : essay.content;
         if (parsedContent.sections && Array.isArray(parsedContent.sections)) {
+            // Process sections with proper image URL handling
             Object.assign(contentData, parsedContent.sections.reduce((acc, section, index) => {
                 const sectionNum = index + 1;
                 return {
                     ...acc,
                     [`section${sectionNum}`]: section.content,
-                    [`section${sectionNum}_image_url`]: section.selected_image_url || section.background_image
+                    // Use selected_image_url if available, otherwise use empty string (not background_image text)
+                    [`section${sectionNum}_image_url`]: section.selected_image_url || "",
                 };
             }, {}));
+        }
+        // Handle header background image URL properly
+        if (parsedContent.header_background_image_url) {
+            contentData.header_background_image =
+                parsedContent.header_background_image_url;
         }
     }
     catch (error) {
@@ -157,7 +166,7 @@ const generateEssayHtml = async (essay, username = "Anonymous") => {
 const updateEssay = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, subtitle, content, isPublished, isPrivate, tags, titleColor, textColor, fontFamily, boxBgColor, boxOpacity, backgroundEffect, youtubeVideoCode } = req.body;
+        const { title, subtitle, content, isPublished, isPrivate, tags, titleColor, textColor, fontFamily, boxBgColor, boxOpacity, backgroundEffect, youtubeVideoCode, } = req.body;
         // Ensure user is authenticated
         if (!req.user) {
             res.status(401).json({ message: "Not authenticated" });
@@ -208,7 +217,7 @@ const updateEssay = async (req, res) => {
             youtubeVideoCode !== undefined;
         if (shouldRegenerateHtml) {
             // Get the user's name
-            const User = mongoose_1.default.model('User');
+            const User = mongoose_1.default.model("User");
             const user = await User.findById(req.user.id || req.user._id);
             const username = user ? user.name : "Anonymous";
             // Generate new HTML content
@@ -231,7 +240,7 @@ const updateEssay = async (req, res) => {
                 backgroundEffect: essay.backgroundEffect,
                 boxBgColor: essay.boxBgColor,
                 boxOpacity: essay.boxOpacity,
-                youtubeVideoCode: essay.youtubeVideoCode
+                youtubeVideoCode: essay.youtubeVideoCode,
             },
         });
     }
@@ -275,7 +284,7 @@ const createHtmlEssay = async (req, res) => {
     try {
         const { title, subtitle, header_background_image, content, youtubeVideoCode, isPrivate, 
         // Styling properties
-        titleColor, textColor, fontFamily, boxBgColor, boxOpacity, backgroundEffect } = req.body;
+        titleColor, textColor, fontFamily, boxBgColor, boxOpacity, backgroundEffect, } = req.body;
         if (!req.user) {
             res.status(401).json({ message: "Not authenticated" });
             return;
@@ -285,7 +294,7 @@ const createHtmlEssay = async (req, res) => {
             return;
         }
         // Get the user's name
-        const User = mongoose_1.default.model('User');
+        const User = mongoose_1.default.model("User");
         const user = await User.findById(req.user.id || req.user._id);
         const username = user ? user.name : "Anonymous";
         // Create essay object
@@ -305,14 +314,14 @@ const createHtmlEssay = async (req, res) => {
             fontFamily: fontFamily || "Playfair Display",
             backgroundEffect: backgroundEffect || "none",
             boxBgColor: boxBgColor || "#585858",
-            boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5
+            boxOpacity: boxOpacity !== undefined ? boxOpacity : 0.5,
         };
         // Generate HTML content
         const htmlContent = await generateEssayHtml({ ...essayData, content }, username);
         // Create essay with generated HTML
         const essay = await Essay_1.default.create({
             ...essayData,
-            htmlContent
+            htmlContent,
         });
         res.status(201).json({
             success: true,
@@ -333,7 +342,7 @@ const createHtmlEssay = async (req, res) => {
                 fontFamily: essay.fontFamily,
                 backgroundEffect: essay.backgroundEffect,
                 boxBgColor: essay.boxBgColor,
-                boxOpacity: essay.boxOpacity
+                boxOpacity: essay.boxOpacity,
             },
         });
     }
@@ -342,7 +351,7 @@ const createHtmlEssay = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to create HTML essay",
-            error: error instanceof Error ? error.message : "Unknown error"
+            error: error instanceof Error ? error.message : "Unknown error",
         });
     }
 };
@@ -351,7 +360,7 @@ exports.createHtmlEssay = createHtmlEssay;
 const renderEssayById = async (req, res) => {
     try {
         const { id } = req.params;
-        const essay = await Essay_1.default.findById(id).populate('author');
+        const essay = await Essay_1.default.findById(id).populate("author");
         if (!essay) {
             res.status(404).json({ message: "Essay not found" });
             return;
@@ -393,28 +402,28 @@ const getAllPublishedEssays = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        const sortBy = req.query.sortBy || 'latest';
+        const sortBy = req.query.sortBy || "latest";
         let sortQuery = {};
-        if (sortBy === 'latest') {
+        if (sortBy === "latest") {
             sortQuery = { createdAt: -1 };
         }
-        else if (sortBy === 'popular') {
+        else if (sortBy === "popular") {
             sortQuery = { views: -1 };
         }
         const [essays, total] = await Promise.all([
             Essay_1.default.find({ isPrivate: { $ne: true }, isPublished: true })
                 .sort(sortQuery)
-                .select('title subtitle header_background_image author views createdAt tags isPublished isPrivate')
-                .populate('author', 'name')
+                .select("title subtitle header_background_image author views createdAt tags isPublished isPrivate")
+                .populate("author", "name")
                 .skip(skip)
                 .limit(limit),
-            Essay_1.default.countDocuments({ isPrivate: { $ne: true }, isPublished: true })
+            Essay_1.default.countDocuments({ isPrivate: { $ne: true }, isPublished: true }),
         ]);
         res.status(200).json({
             essays,
             currentPage: page,
             totalPages: Math.ceil(total / limit),
-            totalEssays: total
+            totalEssays: total,
         });
     }
     catch (error) {
