@@ -38,8 +38,7 @@ export async function getImageUrls(
     const url = `${LUMMI_API_URL}?query=${encodeURIComponent(
       prompt
     )}&perPage=${maxImages}&free=true`;
-    console.log(`[LUMMI] Searching for images with prompt: "${prompt}"`);
-    console.log(`[LUMMI] API URL: ${url}`);
+
     const response = await axios.get(LUMMI_API_URL, {
       headers: {
         Authorization: `Bearer ${LUMMI_API_KEY}`,
@@ -50,14 +49,13 @@ export async function getImageUrls(
     if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
       // Return the image URLs (use .url property)
       const urls = data.data.map((img: any) => img.url).filter(Boolean);
-      console.log(`[LUMMI] Found ${urls.length} image URL(s):`, urls);
+
       return {
         success: true,
         message: `Found ${urls.length} image URLs from Lummi API`,
         urls,
       };
     } else {
-      console.log(`[LUMMI] No images found for prompt: "${prompt}"`);
       return {
         success: true,
         message: "No images found",

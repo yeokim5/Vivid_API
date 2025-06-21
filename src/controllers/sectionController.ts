@@ -29,7 +29,6 @@ export const divideSongIntoSections = async (req: Request, res: Response) => {
 
     // Step 1: Divide content into exactly 9 sections using NLP
     const sections = processText(content, SECTION_COUNT);
-    console.log("NLP Sections:", sections);
 
     // Ensure we have exactly 9 sections
     const sectionKeys = Object.keys(sections);

@@ -7,106 +7,175 @@ exports.processText = processText;
  * paragraph breaks when possible and ensuring more meaningful content division.
  */
 function processText(text, sectionCount = 9) {
-    // 1. Preserve original paragraph structure while cleaning up excessive whitespace
+    // 1. Clean up excessive whitespace while preserving structure
     const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
-    // 2. Split by paragraphs first (for natural content breaks)
+    // 2. Try paragraphs first for natural divisions
     const paragraphs = cleanText
         .split(/\n\n+/)
         .filter((p) => p.trim().length > 0);
-    // 3. If we have enough paragraphs, use them as our primary units
     if (paragraphs.length >= sectionCount) {
         return distributeContentUnits(paragraphs, sectionCount);
     }
-    // 4. If not enough paragraphs, try stanzas (groups of lines)
-    const stanzas = cleanText
-        .split(/\n\n+/)
-        .map((stanza) => stanza.trim())
-        .filter((stanza) => stanza.length > 0);
-    if (stanzas.length >= sectionCount) {
-        return distributeContentUnits(stanzas, sectionCount);
-    }
-    // 5. If not enough stanzas, try individual lines
-    const lines = cleanText
-        .split(/\n+/)
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-    if (lines.length >= sectionCount) {
-        return distributeContentUnits(lines, sectionCount);
-    }
-    // 6. If not enough lines, try sentences
-    const allText = cleanText.replace(/\n+/g, " ");
-    const sentenceRegex = /[^.!?]+[.!?]+/g;
-    const matches = allText.match(sentenceRegex) || [];
-    const sentences = matches.map((s) => s.trim()).filter((s) => s.length > 0);
+    // 3. Extract sentences and create meaningful groups
+    const sentences = extractSentences(cleanText);
     if (sentences.length >= sectionCount) {
         return distributeContentUnits(sentences, sectionCount);
     }
-    // 7. If all else fails, use a character-based approach to ensure 9 sections
-    return distributeTextByCharacters(cleanText, sectionCount);
+    // 4. If we have fewer sentences than sections needed, group by semantic chunks
+    return createSemanticChunks(cleanText, sectionCount);
+}
+/**
+ * Extract sentences using improved regex
+ */
+function extractSentences(text) {
+    // Normalize text but preserve sentence structure
+    const normalizedText = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+    // Split on sentence endings, being more careful about what constitutes a sentence
+    const sentences = normalizedText.split(/(?<=\.|\!|\?)\s+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 5);
+    return sentences;
+}
+/**
+ * Create semantic chunks by identifying natural thought boundaries
+ */
+function createSemanticChunks(text, sectionCount) {
+    const normalizedText = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+    // Find all meaningful break points in the text
+    const breakPoints = findMeaningfulBreaks(normalizedText);
+    // If we don't have enough natural breaks, create them
+    if (breakPoints.length < sectionCount - 1) {
+        return createBalancedSemanticSections(normalizedText, sectionCount);
+    }
+    // Select the best break points to create the desired number of sections
+    const selectedBreaks = selectOptimalBreaks(breakPoints, sectionCount - 1);
+    return createSектionsFromBreaks(normalizedText, selectedBreaks);
+}
+/**
+ * Find meaningful break points in the text
+ */
+function findMeaningfulBreaks(text) {
+    const breaks = [];
+    // 1. Sentence endings (highest priority)
+    const sentenceRegex = /[.!?]\s+/g;
+    let match;
+    while ((match = sentenceRegex.exec(text)) !== null) {
+        breaks.push(match.index + match[0].length);
+    }
+    // 2. Strong transitional phrases
+    const transitionRegex = /\b(however|therefore|moreover|furthermore|nevertheless|meanwhile|consequently|in addition|on the other hand|for example|in contrast)\s+/gi;
+    transitionRegex.lastIndex = 0;
+    while ((match = transitionRegex.exec(text)) !== null) {
+        breaks.push(match.index);
+    }
+    // 3. After certain conjunctions that introduce new ideas
+    const conjunctionRegex = /\b(and|but)\s+(?=[A-Z])/g;
+    conjunctionRegex.lastIndex = 0;
+    while ((match = conjunctionRegex.exec(text)) !== null) {
+        breaks.push(match.index + match[0].length);
+    }
+    // Remove duplicates and sort
+    return [...new Set(breaks)].sort((a, b) => a - b);
+}
+/**
+ * Create balanced sections when we don't have enough natural breaks
+ */
+function createBalancedSemanticSections(text, sectionCount) {
+    const words = text.split(/\s+/);
+    const totalWords = words.length;
+    const baseWordsPerSection = Math.ceil(totalWords / sectionCount);
+    const result = {};
+    let currentWordIndex = 0;
+    for (let i = 0; i < sectionCount; i++) {
+        const remainingWords = totalWords - currentWordIndex;
+        const remainingSections = sectionCount - i;
+        const wordsForThisSection = Math.ceil(remainingWords / remainingSections);
+        let endIdx = Math.min(currentWordIndex + wordsForThisSection, totalWords);
+        // For sections that aren't the last one, try to end at a better boundary
+        if (i < sectionCount - 1 && endIdx < totalWords) {
+            // Look ahead a few words for a sentence ending
+            for (let j = 0; j < Math.min(5, totalWords - endIdx); j++) {
+                const word = words[endIdx + j];
+                if (word && /[.!?]$/.test(word)) {
+                    endIdx = endIdx + j + 1;
+                    break;
+                }
+            }
+            // If no sentence ending, look for other natural breaks
+            if (endIdx === currentWordIndex + wordsForThisSection) {
+                for (let j = 0; j < Math.min(3, totalWords - endIdx); j++) {
+                    const word = words[endIdx + j];
+                    if (word && /^(and|but|however|therefore)$/i.test(word)) {
+                        endIdx = endIdx + j;
+                        break;
+                    }
+                }
+            }
+        }
+        const sectionWords = words.slice(currentWordIndex, endIdx);
+        result[`section_${i + 1}`] = sectionWords.join(' ');
+        currentWordIndex = endIdx;
+    }
+    return result;
+}
+/**
+ * Select optimal break points to create desired number of sections
+ */
+function selectOptimalBreaks(breakPoints, numBreaksNeeded) {
+    if (breakPoints.length <= numBreaksNeeded) {
+        return breakPoints;
+    }
+    // Select breaks that create the most evenly distributed sections
+    const selected = [];
+    const interval = breakPoints.length / numBreaksNeeded;
+    for (let i = 0; i < numBreaksNeeded; i++) {
+        const idealIndex = Math.round(i * interval);
+        const actualIndex = Math.min(idealIndex, breakPoints.length - 1);
+        selected.push(breakPoints[actualIndex]);
+    }
+    return selected;
+}
+/**
+ * Create sections from selected break points
+ */
+function createSектionsFromBreaks(text, breakPoints) {
+    const result = {};
+    const allBreaks = [0, ...breakPoints, text.length];
+    for (let i = 0; i < allBreaks.length - 1; i++) {
+        const start = allBreaks[i];
+        const end = allBreaks[i + 1];
+        result[`section_${i + 1}`] = text.substring(start, end).trim();
+    }
+    return result;
 }
 /**
  * Helper function to distribute content units evenly across sections
  */
 function distributeContentUnits(units, sectionCount) {
-    // Calculate number of units per section
     const totalUnits = units.length;
-    const unitsPerSection = Math.max(1, Math.floor(totalUnits / sectionCount));
-    let remainingUnits = totalUnits % sectionCount;
+    const unitsPerSection = Math.floor(totalUnits / sectionCount);
+    let extraUnits = totalUnits % sectionCount;
     const result = {};
     let currentIndex = 0;
     for (let i = 0; i < sectionCount; i++) {
-        // Calculate how many units this section should have
+        // Calculate units for this section
         let unitsForThisSection = unitsPerSection;
-        // Distribute remaining units evenly
-        if (remainingUnits > 0) {
+        if (extraUnits > 0) {
             unitsForThisSection++;
-            remainingUnits--;
+            extraUnits--;
         }
-        // Handle the case where we might run out of units
+        // Handle edge case
         if (currentIndex >= totalUnits) {
-            // Reuse content from the beginning if we run out
-            result[`section_${i + 1}`] =
-                result[`section_${(i % (currentIndex / unitsPerSection)) + 1}`] ||
-                    `Section ${i + 1}`;
+            result[`section_${i + 1}`] = units[Math.min(currentIndex, totalUnits - 1)] || `Section ${i + 1}`;
             continue;
         }
-        // Get the units for this section
-        const sectionUnits = units.slice(currentIndex, Math.min(currentIndex + unitsForThisSection, totalUnits));
-        currentIndex += unitsForThisSection;
-        // Join the units for this section (preserving original spacing)
-        result[`section_${i + 1}`] = sectionUnits.join(" ");
-    }
-    return result;
-}
-/**
- * Last resort function to distribute text by characters when we don't have enough natural breaks
- */
-function distributeTextByCharacters(text, sectionCount) {
-    const cleanText = text.replace(/\s+/g, " ").trim();
-    const totalLength = cleanText.length;
-    const charsPerSection = Math.floor(totalLength / sectionCount);
-    const result = {};
-    for (let i = 0; i < sectionCount; i++) {
-        const startPos = i * charsPerSection;
-        const endPos = i === sectionCount - 1 ? totalLength : (i + 1) * charsPerSection;
-        // Find a good break point (space) near the calculated position
-        let adjustedEndPos = endPos;
-        if (i < sectionCount - 1 && endPos < totalLength) {
-            // Look for a space within 20 characters of the calculated position
-            for (let j = 0; j < 20; j++) {
-                if (endPos + j < totalLength && cleanText[endPos + j] === " ") {
-                    adjustedEndPos = endPos + j;
-                    break;
-                }
-                if (endPos - j > startPos && cleanText[endPos - j] === " ") {
-                    adjustedEndPos = endPos - j;
-                    break;
-                }
-            }
-        }
-        result[`section_${i + 1}`] = cleanText
-            .substring(startPos, adjustedEndPos)
-            .trim();
+        // Get units for this section
+        const endIndex = Math.min(currentIndex + unitsForThisSection, totalUnits);
+        const sectionUnits = units.slice(currentIndex, endIndex);
+        currentIndex = endIndex;
+        // Join units appropriately
+        const joinChar = units[0] && units[0].includes('\n') ? '\n\n' : ' ';
+        result[`section_${i + 1}`] = sectionUnits.join(joinChar);
     }
     return result;
 }

@@ -24,38 +24,32 @@ const firebaseLogin = async (req, res) => {
             res.status(400).json({ message: "User ID and email are required" });
             return;
         }
-        // Find or create user
-        let user = await User_1.default.findOne({ firebaseUid: uid });
-        if (!user) {
-            // Check if user exists with this email
-            user = await User_1.default.findOne({ email });
-            if (user) {
-                // Update existing user with Firebase UID
-                user.firebaseUid = uid;
-                if (photoURL && !user.profilePicture) {
-                    user.profilePicture = photoURL;
-                }
-                user.lastLogin = new Date();
-                await user.save();
+        // First check if user exists with this email
+        let user = await User_1.default.findOne({ email });
+        if (user) {
+            // Update existing user with Firebase UID and other info
+            user.firebaseUid = uid;
+            if (photoURL && !user.profilePicture) {
+                user.profilePicture = photoURL;
             }
-            else {
-                // Create new user
-                const nameParts = name ? name.split(" ") : ["", ""];
-                user = await User_1.default.create({
-                    firebaseUid: uid,
-                    email,
-                    name: name || email,
-                    firstName: nameParts[0] || "",
-                    lastName: nameParts.slice(1).join(" ") || "",
-                    profilePicture: photoURL || "",
-                    lastLogin: new Date(),
-                });
+            if (name && !user.name) {
+                user.name = name;
             }
-        }
-        else {
-            // Update last login time
             user.lastLogin = new Date();
             await user.save();
+        }
+        else {
+            // Create new user only if no user exists with this email
+            const nameParts = name ? name.split(" ") : ["", ""];
+            user = await User_1.default.create({
+                firebaseUid: uid,
+                email,
+                name: name || email,
+                firstName: nameParts[0] || "",
+                lastName: nameParts.slice(1).join(" ") || "",
+                profilePicture: photoURL || "",
+                lastLogin: new Date(),
+            });
         }
         // Generate JWT token
         const token = generateToken(user);

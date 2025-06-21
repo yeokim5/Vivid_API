@@ -85,8 +85,6 @@ export const getUserEssays = async (
       };
     });
 
-    console.log("API Response - processedEssays[0]:", processedEssays[0]);
-
     res.status(200).json({ essays: processedEssays });
   } catch (error) {
     console.error("Get user essays error:", error);
@@ -123,11 +121,6 @@ export const getEssayById = async (
       fontFamily: essayObj.fontFamily || "Playfair Display",
       backgroundEffect: essayObj.backgroundEffect || "none",
     };
-
-    console.log("API Response - getEssayById:", {
-      boxBgColor: processedEssay.boxBgColor,
-      boxOpacity: processedEssay.boxOpacity,
-    });
 
     res.status(200).json({ essay: processedEssay });
   } catch (error) {

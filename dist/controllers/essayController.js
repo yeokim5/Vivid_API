@@ -72,7 +72,6 @@ const getUserEssays = async (req, res) => {
                 backgroundEffect: essayObj.backgroundEffect || "none",
             };
         });
-        console.log("API Response - processedEssays[0]:", processedEssays[0]);
         res.status(200).json({ essays: processedEssays });
     }
     catch (error) {
@@ -103,10 +102,6 @@ const getEssayById = async (req, res) => {
             fontFamily: essayObj.fontFamily || "Playfair Display",
             backgroundEffect: essayObj.backgroundEffect || "none",
         };
-        console.log("API Response - getEssayById:", {
-            boxBgColor: processedEssay.boxBgColor,
-            boxOpacity: processedEssay.boxOpacity,
-        });
         res.status(200).json({ essay: processedEssay });
     }
     catch (error) {
