@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import dotenv from "dotenv";
 import session from "express-session";
 import cookieParser from "cookie-parser";
@@ -19,6 +18,13 @@ import ensureTemplateAssets from "./utils/ensureTemplateAssets";
 
 // Load environment variables
 dotenv.config();
+
+// Conditional morgan import for development only
+let morganLogger: any = null;
+if (process.env.NODE_ENV !== "production") {
+  const morgan = require("morgan");
+  morganLogger = morgan("dev");
+}
 
 console.log("🚀 Starting Vivid server...");
 
@@ -127,7 +133,10 @@ app.use(
   })
 );
 
-app.use(morgan("dev"));
+// Only use morgan in development
+if (morganLogger) {
+  app.use(morganLogger);
+}
 
 // Handle webhooks with raw bodies first
 app.use("/api/credits/webhook", express.raw({ type: "application/json" }));
@@ -147,6 +156,9 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       maxAge: 10 * 60 * 1000, // 10 minutes as per requirements
     },
+    // Memory optimization: limit session store size
+    rolling: true, // Reset expiry on activity
+    unset: "destroy", // Remove session data when unset
   })
 );
 // Initialize Passport

@@ -1,8 +1,24 @@
 import { Request, Response } from "express";
 import { getImageUrls } from "../utils/image_getter";
 
-// Cache to store ongoing image fetches
+// Cache to store ongoing image fetches with memory management
 const ongoingFetches: Map<string, Promise<any>> = new Map();
+const MAX_CACHE_SIZE = 50; // Limit cache size to prevent memory issues
+
+// Cleanup function to prevent memory leaks
+const cleanupCache = () => {
+  if (ongoingFetches.size > MAX_CACHE_SIZE) {
+    // Remove oldest entries (simple LRU-like behavior)
+    const keysToDelete = Array.from(ongoingFetches.keys()).slice(
+      0,
+      ongoingFetches.size - MAX_CACHE_SIZE
+    );
+    keysToDelete.forEach((key) => ongoingFetches.delete(key));
+  }
+};
+
+// Periodic cleanup every 5 minutes
+setInterval(cleanupCache, 5 * 60 * 1000);
 
 export const searchImages = async (req: Request, res: Response) => {
   const sectionId = req.body.sectionId;

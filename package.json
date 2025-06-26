@@ -4,13 +4,12 @@
   "description": "Backend for MagicEssay application using MERN stack",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "node --optimize-for-size --max-old-space-size=256 dist/index.js",
     "dev": "ts-node-dev --respawn src/index.ts",
     "build": "tsc && cp src/utils/template.html dist/utils/ || copy src\\utils\\template.html dist\\utils\\",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@types/natural": "^5.1.5",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -22,12 +21,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.16.0",
     "mongoose": "^8.0.0",
-    "morgan": "^1.10.0",
-    "natural": "^8.0.1",
     "openai": "^4.100.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "puppeteer": "^24.8.2",
     "stripe": "^18.2.0",
     "axios": "^1.6.7"
   },
@@ -42,6 +38,7 @@
     "@types/node": "^20.10.5",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",
+    "morgan": "^1.10.0",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
