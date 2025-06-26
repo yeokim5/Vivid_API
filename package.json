@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp src/utils/template.html dist/utils/ || copy src\\utils\\template.html dist\\utils\\",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
