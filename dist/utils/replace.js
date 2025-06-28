@@ -51,17 +51,23 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
         const boxBgReplacement = `.quote {
   background: rgba(${parseInt(boxBgColor.slice(1, 3), 16)}, ${parseInt(boxBgColor.slice(3, 5), 16)}, ${parseInt(boxBgColor.slice(5, 7), 16)}, ${boxOpacity});`;
         htmlTemplate = htmlTemplate.replace(boxBgStyleRegex, boxBgReplacement);
-        // Replace YouTube video code
-        if (contentData.youtubeVideoCode &&
-            contentData.youtubeVideoCode.trim() !== "") {
+        // Replace YouTube video code and handle music player visibility
+        const hasValidVideoCode = contentData.youtubeVideoCode &&
+            typeof contentData.youtubeVideoCode === "string" &&
+            contentData.youtubeVideoCode.trim() !== "" &&
+            contentData.youtubeVideoCode.trim() !== "undefined" &&
+            contentData.youtubeVideoCode.trim() !== "null";
+        if (hasValidVideoCode) {
             // Replace the YouTube video code
-            htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, contentData.youtubeVideoCode);
-            // Make sure the music icon is visible
-            htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: block;">`);
+            htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, contentData.youtubeVideoCode.trim());
+            // Make sure the music player container is visible
+            htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: block !important;">`);
         }
         else {
-            // If no YouTube video code, hide the music player container
-            htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: none;">`);
+            // If no valid YouTube video code, replace with empty string and hide the music player container
+            htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, "");
+            // Hide the music player container
+            htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: none !important;">`);
         }
         // Update the background images in the JavaScript section
         htmlTemplate = htmlTemplate.replace(/\[Header_background\]/gi, contentData.header_background_image || "");

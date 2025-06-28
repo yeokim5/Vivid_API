@@ -39,6 +39,7 @@ export const verifyToken = async (
       email: user.email,
       name: user.name,
       profilePicture: user.profilePicture,
+      credits: user.credits,
     };
 
     next();

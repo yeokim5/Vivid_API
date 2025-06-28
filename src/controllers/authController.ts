@@ -110,19 +110,30 @@ export const googleAuthCallback = (req: Request, res: Response): void => {
 };
 
 // Get current user data
-export const getCurrentUser = (req: Request, res: Response): void => {
+export const getCurrentUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Access user from request (added by verifyToken middleware)
-    const user = (req as any).user;
+    const requestUser = (req as any).user;
+
+    if (!requestUser) {
+      res.status(401).json({ message: "Not authenticated" });
+      return;
+    }
+
+    // Get fresh user data from database to ensure we have latest credits
+    const user = await User.findById(requestUser.id);
 
     if (!user) {
-      res.status(401).json({ message: "Not authenticated" });
+      res.status(401).json({ message: "User not found" });
       return;
     }
 
     // Return user data
     res.status(200).json({
-      id: user.id || user._id?.toString(),
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       profilePicture: user.profilePicture,

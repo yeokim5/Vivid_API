@@ -2,8 +2,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.processBackgroundImageSuggestions = exports.searchImages = void 0;
 const image_getter_1 = require("../utils/image_getter");
-// Cache to store ongoing image fetches
+// Cache to store ongoing image fetches with memory management
 const ongoingFetches = new Map();
+const MAX_CACHE_SIZE = 50; // Limit cache size to prevent memory issues
+// Cleanup function to prevent memory leaks
+const cleanupCache = () => {
+    if (ongoingFetches.size > MAX_CACHE_SIZE) {
+        // Remove oldest entries (simple LRU-like behavior)
+        const keysToDelete = Array.from(ongoingFetches.keys()).slice(0, ongoingFetches.size - MAX_CACHE_SIZE);
+        keysToDelete.forEach((key) => ongoingFetches.delete(key));
+    }
+};
+// Periodic cleanup every 5 minutes
+setInterval(cleanupCache, 5 * 60 * 1000);
 const searchImages = async (req, res) => {
     const sectionId = req.body.sectionId;
     const cacheKey = sectionId ? `${req.body.prompt}_${sectionId}` : null;

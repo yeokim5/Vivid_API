@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
-const morgan_1 = __importDefault(require("morgan"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_session_1 = __importDefault(require("express-session"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -22,6 +21,12 @@ const path_1 = __importDefault(require("path"));
 const ensureTemplateAssets_1 = __importDefault(require("./utils/ensureTemplateAssets"));
 // Load environment variables
 dotenv_1.default.config();
+// Conditional morgan import for development only
+let morganLogger = null;
+if (process.env.NODE_ENV !== "production") {
+    const morgan = require("morgan");
+    morganLogger = morgan("dev");
+}
 console.log("🚀 Starting Vivid server...");
 // Connect to MongoDB
 (0, db_1.default)();
@@ -115,7 +120,10 @@ app.use((0, helmet_1.default)({
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
 }));
-app.use((0, morgan_1.default)("dev"));
+// Only use morgan in development
+if (morganLogger) {
+    app.use(morganLogger);
+}
 // Handle webhooks with raw bodies first
 app.use("/api/credits/webhook", express_1.default.raw({ type: "application/json" }));
 // Then parse JSON for the rest
@@ -131,6 +139,9 @@ app.use((0, express_session_1.default)({
         secure: process.env.NODE_ENV === "production",
         maxAge: 10 * 60 * 1000, // 10 minutes as per requirements
     },
+    // Memory optimization: limit session store size
+    rolling: true, // Reset expiry on activity
+    unset: "destroy", // Remove session data when unset
 }));
 // Initialize Passport
 app.use(passport_1.default.initialize());

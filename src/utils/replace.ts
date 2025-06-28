@@ -119,27 +119,34 @@ export function generateHtmlFromTemplate(
 
     htmlTemplate = htmlTemplate.replace(boxBgStyleRegex, boxBgReplacement);
 
-    // Replace YouTube video code
-    if (
+    // Replace YouTube video code and handle music player visibility
+    const hasValidVideoCode =
       contentData.youtubeVideoCode &&
-      contentData.youtubeVideoCode.trim() !== ""
-    ) {
+      typeof contentData.youtubeVideoCode === "string" &&
+      contentData.youtubeVideoCode.trim() !== "" &&
+      contentData.youtubeVideoCode.trim() !== "undefined" &&
+      contentData.youtubeVideoCode.trim() !== "null";
+
+    if (hasValidVideoCode) {
       // Replace the YouTube video code
       htmlTemplate = htmlTemplate.replace(
         /\[Video_Code\]/gi,
-        contentData.youtubeVideoCode
+        contentData.youtubeVideoCode!.trim()
       );
 
-      // Make sure the music icon is visible
+      // Make sure the music player container is visible
       htmlTemplate = htmlTemplate.replace(
         /<div class="music-player-container">/,
-        `<div class="music-player-container" style="display: block;">`
+        `<div class="music-player-container" style="display: block !important;">`
       );
     } else {
-      // If no YouTube video code, hide the music player container
+      // If no valid YouTube video code, replace with empty string and hide the music player container
+      htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, "");
+
+      // Hide the music player container
       htmlTemplate = htmlTemplate.replace(
         /<div class="music-player-container">/,
-        `<div class="music-player-container" style="display: none;">`
+        `<div class="music-player-container" style="display: none !important;">`
       );
     }
 
