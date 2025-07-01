@@ -91,17 +91,23 @@ const googleAuthCallback = (req, res) => {
 };
 exports.googleAuthCallback = googleAuthCallback;
 // Get current user data
-const getCurrentUser = (req, res) => {
+const getCurrentUser = async (req, res) => {
     try {
         // Access user from request (added by verifyToken middleware)
-        const user = req.user;
-        if (!user) {
+        const requestUser = req.user;
+        if (!requestUser) {
             res.status(401).json({ message: "Not authenticated" });
+            return;
+        }
+        // Get fresh user data from database to ensure we have latest credits
+        const user = await User_1.default.findById(requestUser.id);
+        if (!user) {
+            res.status(401).json({ message: "User not found" });
             return;
         }
         // Return user data
         res.status(200).json({
-            id: user.id || user._id?.toString(),
+            id: user._id.toString(),
             name: user.name,
             email: user.email,
             profilePicture: user.profilePicture,

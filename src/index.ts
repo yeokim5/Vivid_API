@@ -12,6 +12,7 @@ import essayRoutes from "./routes/essayRoutes";
 import sectionRoutes from "./routes/sectionRoutes";
 import imageRoutes from "./routes/imageRoutes";
 import creditRoutes from "./routes/creditRoutes";
+import queueRoutes from "./routes/queueRoutes";
 import "./config/firebase"; // Import Firebase configuration
 import path from "path";
 import ensureTemplateAssets from "./utils/ensureTemplateAssets";
@@ -176,6 +177,7 @@ app.use("/api/essays", essayRoutes);
 app.use("/api/sections", sectionRoutes);
 app.use("/api/images", imageRoutes);
 app.use("/api/credits", creditRoutes);
+app.use("/api/queue", queueRoutes);
 
 // Serve static files from the uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

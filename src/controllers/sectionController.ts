@@ -5,6 +5,8 @@ import generateBackgroundImages from "../utils/backgroundImage";
 import fs from "fs";
 import path from "path";
 import { getImageUrls } from "../utils/image_getter";
+import { queueManager } from "../utils/queueManager";
+import { AuthRequest } from "../types";
 
 // Initialize the OpenAI client with API key
 const openai = new OpenAI({
@@ -19,12 +21,60 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const divideSongIntoSections = async (req: Request, res: Response) => {
+export const divideSongIntoSections = async (
+  req: AuthRequest,
+  res: Response
+) => {
   try {
     const { title, content } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ error: "Title and content are required" });
+    }
+
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authenticated",
+      });
+    }
+
+    const userId = req.user.id || req.user._id;
+
+    // Check if this user is currently processing (already started via /queue/start)
+    if (queueManager.isUserProcessing(userId)) {
+      // User is already processing, allow them to continue
+      console.log(
+        `[SECTIONS] User ${userId} is currently processing, allowing to continue`
+      );
+    } else {
+      // User is not processing, check if they can start
+      if (!queueManager.canProcess()) {
+        return res.status(429).json({
+          success: false,
+          error: "Rate limit exceeded. Please check queue status.",
+          shouldCheckQueue: true,
+        });
+      }
+
+      // Check if this user is next in queue (if there is a queue)
+      const nextItem = queueManager.getNextForProcessing();
+      if (nextItem && nextItem.userId !== userId) {
+        return res.status(429).json({
+          success: false,
+          error: "Not your turn to process. Please wait in queue.",
+          shouldCheckQueue: true,
+        });
+      }
+
+      // Start processing for this user
+      if (nextItem && nextItem.userId === userId) {
+        queueManager.startProcessing(userId);
+      } else if (queueManager.canProcess()) {
+        // No queue, can start immediately
+        queueManager.startProcessing(userId);
+      }
     }
 
     // Step 1: Divide content into exactly 9 sections using NLP
@@ -159,7 +209,7 @@ export const divideSongIntoSections = async (req: Request, res: Response) => {
     }
 
     // Return combined data to frontend
-    return res.status(200).json({
+    const responseData = {
       success: true,
       data: {
         title,
@@ -169,9 +219,21 @@ export const divideSongIntoSections = async (req: Request, res: Response) => {
         header_background_image_url,
         sections: sectionData,
       },
-    });
+    };
+
+    // Complete processing and remove from queue
+    queueManager.completeProcessing(userId);
+
+    return res.status(200).json(responseData);
   } catch (error) {
     console.error("Error:", error);
+
+    // Complete processing on error (cleanup)
+    if (req.user) {
+      const userId = req.user.id || req.user._id;
+      queueManager.completeProcessing(userId);
+    }
+
     return res.status(500).json({
       success: false,
       error: "Failed to process content",

@@ -10,6 +10,7 @@ const backgroundImage_1 = __importDefault(require("../utils/backgroundImage"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const image_getter_1 = require("../utils/image_getter");
+const queueManager_1 = require("../utils/queueManager");
 // Initialize the OpenAI client with API key
 const openai = new openai_1.default({
     apiKey: process.env.OPENAI_API_KEY,
@@ -25,6 +26,46 @@ const divideSongIntoSections = async (req, res) => {
         const { title, content } = req.body;
         if (!title || !content) {
             return res.status(400).json({ error: "Title and content are required" });
+        }
+        // Check authentication
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                error: "Not authenticated",
+            });
+        }
+        const userId = req.user.id || req.user._id;
+        // Check if this user is currently processing (already started via /queue/start)
+        if (queueManager_1.queueManager.isUserProcessing(userId)) {
+            // User is already processing, allow them to continue
+            console.log(`[SECTIONS] User ${userId} is currently processing, allowing to continue`);
+        }
+        else {
+            // User is not processing, check if they can start
+            if (!queueManager_1.queueManager.canProcess()) {
+                return res.status(429).json({
+                    success: false,
+                    error: "Rate limit exceeded. Please check queue status.",
+                    shouldCheckQueue: true,
+                });
+            }
+            // Check if this user is next in queue (if there is a queue)
+            const nextItem = queueManager_1.queueManager.getNextForProcessing();
+            if (nextItem && nextItem.userId !== userId) {
+                return res.status(429).json({
+                    success: false,
+                    error: "Not your turn to process. Please wait in queue.",
+                    shouldCheckQueue: true,
+                });
+            }
+            // Start processing for this user
+            if (nextItem && nextItem.userId === userId) {
+                queueManager_1.queueManager.startProcessing(userId);
+            }
+            else if (queueManager_1.queueManager.canProcess()) {
+                // No queue, can start immediately
+                queueManager_1.queueManager.startProcessing(userId);
+            }
         }
         // Step 1: Divide content into exactly 9 sections using NLP
         const sections = (0, nlpChunk_1.processText)(content, SECTION_COUNT);
@@ -150,7 +191,7 @@ const divideSongIntoSections = async (req, res) => {
             });
         }
         // Return combined data to frontend
-        return res.status(200).json({
+        const responseData = {
             success: true,
             data: {
                 title,
@@ -159,10 +200,18 @@ const divideSongIntoSections = async (req, res) => {
                 header_background_image_url,
                 sections: sectionData,
             },
-        });
+        };
+        // Complete processing and remove from queue
+        queueManager_1.queueManager.completeProcessing(userId);
+        return res.status(200).json(responseData);
     }
     catch (error) {
         console.error("Error:", error);
+        // Complete processing on error (cleanup)
+        if (req.user) {
+            const userId = req.user.id || req.user._id;
+            queueManager_1.queueManager.completeProcessing(userId);
+        }
         return res.status(500).json({
             success: false,
             error: "Failed to process content",

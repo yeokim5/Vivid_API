@@ -30,6 +30,7 @@ const verifyToken = async (req, res, next) => {
             email: user.email,
             name: user.name,
             profilePicture: user.profilePicture,
+            credits: user.credits,
         };
         next();
     }

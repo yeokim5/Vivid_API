@@ -1,4 +1,5 @@
-import express from "express";
+import express, { RequestHandler } from "express";
+import { verifyToken } from "../middleware/authMiddleware";
 import {
   divideSongIntoSections,
   generateEssayJson,
@@ -6,7 +7,11 @@ import {
 
 const router = express.Router();
 
-router.post("/divide", divideSongIntoSections);
-router.post("/generate-json", generateEssayJson);
+router.post(
+  "/divide",
+  verifyToken,
+  divideSongIntoSections as unknown as RequestHandler
+);
+router.post("/generate-json", generateEssayJson as unknown as RequestHandler);
 
 export default router;

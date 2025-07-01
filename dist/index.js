@@ -16,6 +16,7 @@ const essayRoutes_1 = __importDefault(require("./routes/essayRoutes"));
 const sectionRoutes_1 = __importDefault(require("./routes/sectionRoutes"));
 const imageRoutes_1 = __importDefault(require("./routes/imageRoutes"));
 const creditRoutes_1 = __importDefault(require("./routes/creditRoutes"));
+const queueRoutes_1 = __importDefault(require("./routes/queueRoutes"));
 require("./config/firebase"); // Import Firebase configuration
 const path_1 = __importDefault(require("path"));
 const ensureTemplateAssets_1 = __importDefault(require("./utils/ensureTemplateAssets"));
@@ -156,6 +157,7 @@ app.use("/api/essays", essayRoutes_1.default);
 app.use("/api/sections", sectionRoutes_1.default);
 app.use("/api/images", imageRoutes_1.default);
 app.use("/api/credits", creditRoutes_1.default);
+app.use("/api/queue", queueRoutes_1.default);
 // Serve static files from the uploads directory
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
 // Serve static files from the public directory with proper MIME types

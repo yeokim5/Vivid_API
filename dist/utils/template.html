@@ -54,6 +54,7 @@
         --glass-bg: rgba(255, 255, 255, 0.5);
         --glass-border: rgba(255, 255, 255, 0.2);
         --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.3);
+        --font-family: "[FONT_FAMILY]";
       }
 
       body {
@@ -75,6 +76,16 @@
         ); /* This line will be replaced by the custom background color and opacity */
         position: relative;
         z-index: 10; /* Above the background effect */
+      }
+
+      /* Force font family for all quote content */
+      .quote,
+      .quote *,
+      .quote .line,
+      .quote span,
+      .quote p,
+      .quote div {
+        font-family: "[FONT_FAMILY]", serif !important;
       }
 
       /* Z-index hierarchy for proper layering */
