@@ -24,7 +24,7 @@ passport.use(
           // Update last login time
           user.lastLogin = new Date();
           await user.save();
-          return done(null, user);
+          return done(null, { user, isNewUser: false });
         }
 
         // Create new user if doesn't exist
@@ -55,7 +55,7 @@ passport.use(
           },
         });
 
-        return done(null, user);
+        return done(null, { user, isNewUser: true });
       } catch (error) {
         console.error("Error in Google strategy callback:", error);
         return done(error as Error, undefined);

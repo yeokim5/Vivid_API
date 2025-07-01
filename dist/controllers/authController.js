@@ -27,6 +27,7 @@ const firebaseLogin = async (req, res) => {
         }
         // First check if user exists with this email
         let user = await User_1.default.findOne({ email });
+        let isNewUser = false;
         if (user) {
             // Update existing user with Firebase UID and other info
             user.firebaseUid = uid;
@@ -41,6 +42,7 @@ const firebaseLogin = async (req, res) => {
         }
         else {
             // Create new user only if no user exists with this email
+            isNewUser = true;
             const nameParts = name ? name.split(" ") : ["", ""];
             user = await User_1.default.create({
                 firebaseUid: uid,
@@ -70,6 +72,7 @@ const firebaseLogin = async (req, res) => {
                 profilePicture: user.profilePicture,
                 credits: user.credits,
             },
+            isNewUser,
         });
     }
     catch (error) {
@@ -81,15 +84,16 @@ exports.firebaseLogin = firebaseLogin;
 // Handle successful Google authentication
 const googleAuthCallback = (req, res) => {
     try {
-        const user = req.user;
-        if (!user) {
+        const authResult = req.user;
+        if (!authResult || !authResult.user) {
             res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}/login?error=auth_failed`);
             return;
         }
+        const { user, isNewUser } = authResult;
         // Generate JWT token
         const token = generateToken(user);
-        // Redirect to frontend with token
-        res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}/auth/callback?token=${token}`);
+        // Redirect to frontend with token and new user flag
+        res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}/auth/callback?token=${token}&isNewUser=${isNewUser}`);
     }
     catch (error) {
         console.error("Auth callback error:", error);

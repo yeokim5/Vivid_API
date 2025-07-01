@@ -23,7 +23,7 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
             // Update last login time
             user.lastLogin = new Date();
             await user.save();
-            return done(null, user);
+            return done(null, { user, isNewUser: false });
         }
         // Create new user if doesn't exist
         const email = profile.emails && profile.emails[0] ? profile.emails[0].value : "";
@@ -48,7 +48,7 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
                 registrationMethod: "google_oauth",
             },
         });
-        return done(null, user);
+        return done(null, { user, isNewUser: true });
     }
     catch (error) {
         console.error("Error in Google strategy callback:", error);

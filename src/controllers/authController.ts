@@ -31,6 +31,7 @@ export const firebaseLogin = async (
 
     // First check if user exists with this email
     let user = await User.findOne({ email });
+    let isNewUser = false;
 
     if (user) {
       // Update existing user with Firebase UID and other info
@@ -45,6 +46,7 @@ export const firebaseLogin = async (
       await user.save();
     } else {
       // Create new user only if no user exists with this email
+      isNewUser = true;
       const nameParts = name ? name.split(" ") : ["", ""];
       user = await User.create({
         firebaseUid: uid,
@@ -82,6 +84,7 @@ export const firebaseLogin = async (
         profilePicture: user.profilePicture,
         credits: user.credits,
       },
+      isNewUser,
     });
   } catch (error) {
     console.error("Firebase authentication error:", error);
@@ -92,9 +95,9 @@ export const firebaseLogin = async (
 // Handle successful Google authentication
 export const googleAuthCallback = (req: Request, res: Response): void => {
   try {
-    const user = req.user as IUser;
+    const authResult = req.user as { user: IUser; isNewUser: boolean };
 
-    if (!user) {
+    if (!authResult || !authResult.user) {
       res.redirect(
         `${
           process.env.CLIENT_URL || "http://localhost:3000"
@@ -103,14 +106,16 @@ export const googleAuthCallback = (req: Request, res: Response): void => {
       return;
     }
 
+    const { user, isNewUser } = authResult;
+
     // Generate JWT token
     const token = generateToken(user);
 
-    // Redirect to frontend with token
+    // Redirect to frontend with token and new user flag
     res.redirect(
       `${
         process.env.CLIENT_URL || "http://localhost:3000"
-      }/auth/callback?token=${token}`
+      }/auth/callback?token=${token}&isNewUser=${isNewUser}`
     );
   } catch (error) {
     console.error("Auth callback error:", error);
