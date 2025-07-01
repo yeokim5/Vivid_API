@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User, { IUser } from "../models/User";
 import admin from "firebase-admin";
+import { logActivity } from "../middleware/activityLogger";
 
 // Generate JWT token
 const generateToken = (user: IUser): string => {
@@ -54,6 +55,18 @@ export const firebaseLogin = async (
         profilePicture: photoURL || "",
         lastLogin: new Date(),
       });
+
+      // Log user registration activity
+      await logActivity(
+        user._id.toString(),
+        "user_registered",
+        {
+          email: user.email,
+          name: user.name,
+          registrationMethod: "firebase",
+        },
+        req
+      );
     }
 
     // Generate JWT token

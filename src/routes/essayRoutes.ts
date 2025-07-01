@@ -1,5 +1,6 @@
 import express, { RequestHandler } from "express";
 import { verifyToken } from "../middleware/authMiddleware";
+import { logEssayCreation, logEssayView } from "../middleware/activityLogger";
 import {
   createEssay,
   getUserEssays,
@@ -9,7 +10,7 @@ import {
   renderEssayById,
   createHtmlEssay,
   getAllPublishedEssays,
-  incrementEssayViews
+  incrementEssayViews,
 } from "../controllers/essayController";
 
 const router = express.Router();
@@ -21,7 +22,12 @@ router.get("/", getAllPublishedEssays as unknown as RequestHandler);
 router.post("/", verifyToken, createEssay as unknown as RequestHandler);
 
 // Create HTML essay
-router.post("/html", verifyToken, createHtmlEssay as unknown as RequestHandler);
+router.post(
+  "/html",
+  verifyToken,
+  logEssayCreation as unknown as RequestHandler,
+  createHtmlEssay as unknown as RequestHandler
+);
 
 // Get all essays for the authenticated user
 router.get("/user", verifyToken, getUserEssays as unknown as RequestHandler);
@@ -30,7 +36,11 @@ router.get("/user", verifyToken, getUserEssays as unknown as RequestHandler);
 router.post("/:id/view", incrementEssayViews as unknown as RequestHandler);
 
 // Render HTML essay by ID (public route)
-router.get("/:id/render", renderEssayById as unknown as RequestHandler);
+router.get(
+  "/:id/render",
+  logEssayView as unknown as RequestHandler,
+  renderEssayById as unknown as RequestHandler
+);
 
 // Get essay by ID
 router.get("/:id", getEssayById as unknown as RequestHandler);

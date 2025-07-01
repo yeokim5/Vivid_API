@@ -13,6 +13,7 @@ import sectionRoutes from "./routes/sectionRoutes";
 import imageRoutes from "./routes/imageRoutes";
 import creditRoutes from "./routes/creditRoutes";
 import queueRoutes from "./routes/queueRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
 import "./config/firebase"; // Import Firebase configuration
 import path from "path";
 import ensureTemplateAssets from "./utils/ensureTemplateAssets";
@@ -84,6 +85,7 @@ app.use(
           "'unsafe-eval'",
           "https://js.stripe.com",
           "https://*.stripe.com",
+          "https://cdn.jsdelivr.net",
         ],
         styleSrc: [
           "'self'",
@@ -171,6 +173,11 @@ app.get("/", (_req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
+// Analytics dashboard route
+app.get("/analytics", (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "../public/analytics.html"));
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/essays", essayRoutes);
@@ -178,6 +185,7 @@ app.use("/api/sections", sectionRoutes);
 app.use("/api/images", imageRoutes);
 app.use("/api/credits", creditRoutes);
 app.use("/api/queue", queueRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Serve static files from the uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

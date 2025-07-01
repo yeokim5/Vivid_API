@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.logout = exports.getCurrentUser = exports.googleAuthCallback = exports.firebaseLogin = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
+const activityLogger_1 = require("../middleware/activityLogger");
 // Generate JWT token
 const generateToken = (user) => {
     const payload = {
@@ -50,6 +51,12 @@ const firebaseLogin = async (req, res) => {
                 profilePicture: photoURL || "",
                 lastLogin: new Date(),
             });
+            // Log user registration activity
+            await (0, activityLogger_1.logActivity)(user._id.toString(), "user_registered", {
+                email: user.email,
+                name: user.name,
+                registrationMethod: "firebase",
+            }, req);
         }
         // Generate JWT token
         const token = generateToken(user);

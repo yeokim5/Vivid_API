@@ -7,11 +7,12 @@ import {
   firebaseLogin,
 } from "../controllers/authController";
 import { verifyToken } from "../middleware/authMiddleware";
+import { logUserLogin } from "../middleware/activityLogger";
 
 const router = express.Router();
 
 // Firebase authentication route
-router.post("/firebase-login", firebaseLogin);
+router.post("/firebase-login", firebaseLogin, logUserLogin as any);
 
 // Google OAuth routes
 router.get(
@@ -27,7 +28,8 @@ router.get(
     }/login?error=auth_failed`,
     session: false,
   }),
-  googleAuthCallback
+  googleAuthCallback,
+  logUserLogin as any
 );
 
 // Get current user route

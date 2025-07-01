@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User, { IUser } from "../models/User";
 import dotenv from "dotenv";
+import Activity from "../models/Activity";
 
 dotenv.config();
 
@@ -41,6 +42,17 @@ passport.use(
           firstName,
           lastName,
           profilePicture,
+        });
+
+        // Log user registration activity
+        await Activity.create({
+          userId: user._id,
+          action: "user_registered",
+          details: {
+            email: user.email,
+            name: user.name,
+            registrationMethod: "google_oauth",
+          },
         });
 
         return done(null, user);

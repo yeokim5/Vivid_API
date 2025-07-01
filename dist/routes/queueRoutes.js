@@ -19,4 +19,6 @@ router.post("/start", authMiddleware_1.verifyToken, queueController_1.startProce
 router.post("/complete", authMiddleware_1.verifyToken, queueController_1.completeProcessing);
 // Get queue statistics (public endpoint for debugging)
 router.get("/stats", queueController_1.getQueueStats);
+// Debug endpoint to reset processing state (emergency use only)
+router.post("/reset", queueController_1.resetQueue);
 exports.default = router;

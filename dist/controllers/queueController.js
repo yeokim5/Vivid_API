@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getQueueStats = exports.completeProcessing = exports.startProcessing = exports.leaveQueue = exports.checkRateLimit = exports.getQueueStatus = void 0;
+exports.resetQueue = exports.getQueueStats = exports.completeProcessing = exports.startProcessing = exports.leaveQueue = exports.checkRateLimit = exports.getQueueStatus = void 0;
 const queueManager_1 = require("../utils/queueManager");
 const uuid_1 = require("uuid");
 /**
@@ -163,7 +163,7 @@ const startProcessing = async (req, res) => {
         // Check if user can process immediately (no queue)
         if (queueManager_1.queueManager.canProcess() && !queueManager_1.queueManager.isUserInQueue(userId)) {
             // User can start processing immediately
-            const started = queueManager_1.queueManager.startProcessing(userId);
+            const started = queueManager_1.queueManager.tryStartImmediateProcessing(userId);
             if (started) {
                 return res.json({
                     success: true,
@@ -177,9 +177,18 @@ const startProcessing = async (req, res) => {
         // Check if user is next in queue
         const nextItem = queueManager_1.queueManager.getNextForProcessing();
         if (!nextItem || nextItem.userId !== userId) {
+            console.log(`[QUEUE] Start processing denied for user ${userId}. Next item: ${nextItem ? `${nextItem.userId} (${nextItem.id})` : "none"}`);
             return res.status(403).json({
                 success: false,
                 message: "Not your turn to process",
+                debug: {
+                    nextUserId: nextItem?.userId || null,
+                    nextItemId: nextItem?.id || null,
+                    currentUserId: userId,
+                    queueLength: queueManager_1.queueManager.getQueueLength(),
+                    canProcess: queueManager_1.queueManager.canProcess(),
+                    isProcessing: queueManager_1.queueManager.isUserProcessing(userId),
+                },
             });
         }
         const started = queueManager_1.queueManager.startProcessing(userId);
@@ -187,6 +196,11 @@ const startProcessing = async (req, res) => {
             return res.status(403).json({
                 success: false,
                 message: "Failed to start processing",
+                debug: {
+                    canProcess: queueManager_1.queueManager.canProcess(),
+                    isProcessing: queueManager_1.queueManager.isUserProcessing(userId),
+                    queueLength: queueManager_1.queueManager.getQueueLength(),
+                },
             });
         }
         res.json({
@@ -218,12 +232,36 @@ const completeProcessing = async (req, res) => {
             });
         }
         const userId = req.user.id || req.user._id;
+        // Check if user is actually processing before attempting completion
+        if (!queueManager_1.queueManager.isUserProcessing(userId)) {
+            console.log(`[QUEUE] Complete processing skipped - user ${userId} not currently processing`);
+            return res.json({
+                success: true,
+                data: {
+                    completed: false,
+                    message: "No active processing to complete",
+                    debug: {
+                        userId,
+                        isProcessing: queueManager_1.queueManager.isUserProcessing(userId),
+                        queueLength: queueManager_1.queueManager.getQueueLength(),
+                    },
+                },
+            });
+        }
         const completed = queueManager_1.queueManager.completeProcessing(userId);
+        if (!completed) {
+            console.log(`[QUEUE] Complete processing failed for user ${userId}`);
+        }
         res.json({
             success: true,
             data: {
                 completed,
-                message: completed ? "Processing completed" : "No active processing",
+                message: completed ? "Processing completed" : "Completion failed",
+                debug: {
+                    userId,
+                    isProcessing: queueManager_1.queueManager.isUserProcessing(userId),
+                    queueLength: queueManager_1.queueManager.getQueueLength(),
+                },
             },
         });
     }
@@ -237,19 +275,16 @@ const completeProcessing = async (req, res) => {
 };
 exports.completeProcessing = completeProcessing;
 /**
- * Get overall queue statistics (for admin or debugging)
+ * Get queue statistics (enhanced for debugging)
  */
 const getQueueStats = async (req, res) => {
     try {
         const debugInfo = queueManager_1.queueManager.getDebugInfo();
-        console.log("[QUEUE DEBUG]", JSON.stringify(debugInfo, null, 2));
         res.json({
             success: true,
             data: {
-                queueLength: queueManager_1.queueManager.getQueueLength(),
-                canProcess: queueManager_1.queueManager.canProcess(),
-                allStatuses: queueManager_1.queueManager.getAllQueueStatuses(),
-                debug: debugInfo,
+                ...debugInfo,
+                timestamp: new Date().toISOString(),
             },
         });
     }
@@ -262,3 +297,35 @@ const getQueueStats = async (req, res) => {
     }
 };
 exports.getQueueStats = getQueueStats;
+/**
+ * Debug endpoint to reset processing state (emergency use only)
+ */
+const resetQueue = async (req, res) => {
+    try {
+        // Only allow in development or with specific debug key
+        const debugKey = req.headers["x-debug-key"] || req.query.debugKey;
+        if (process.env.NODE_ENV === "production" &&
+            debugKey !== process.env.DEBUG_KEY) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized",
+            });
+        }
+        queueManager_1.queueManager.resetProcessing();
+        res.json({
+            success: true,
+            data: {
+                message: "Queue processing state reset",
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+    catch (error) {
+        console.error("Queue reset error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to reset queue",
+        });
+    }
+};
+exports.resetQueue = resetQueue;
