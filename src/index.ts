@@ -28,7 +28,7 @@ if (process.env.NODE_ENV !== "production") {
   morganLogger = morgan("dev");
 }
 
-console.log("🚀 Starting Vivid server...");
+// console.log("🚀 Starting Vivid server...");
 
 // Connect to MongoDB
 connectDB();
@@ -232,7 +232,7 @@ app.get("*.css", (req, res, next) => {
 // Error handling middleware
 app.use(
   (err: ErrorWithStack, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err.stack);
+    // console.error(err.stack);
     res.status(500).json({
       message: "Something went wrong!",
       error: process.env.NODE_ENV === "development" ? err.message : {},
@@ -243,7 +243,7 @@ app.use(
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Vivid server running on port ${PORT}`);
+  // console.log(`✅ Vivid server running on port ${PORT}`);
 });
 
 export default app;

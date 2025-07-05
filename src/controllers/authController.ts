@@ -29,8 +29,8 @@ export const firebaseLogin = async (
       return;
     }
 
-    // First check if user exists with this email
-    let user = await User.findOne({ email });
+    // First check if user exists with this email or firebase UID
+    let user = await User.findOne({ $or: [{ email }, { firebaseUid: uid }] });
     let isNewUser = false;
 
     if (user) {
@@ -48,27 +48,50 @@ export const firebaseLogin = async (
       // Create new user only if no user exists with this email
       isNewUser = true;
       const nameParts = name ? name.split(" ") : ["", ""];
-      user = await User.create({
-        firebaseUid: uid,
-        email,
-        name: name || email,
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        profilePicture: photoURL || "",
-        lastLogin: new Date(),
-      });
+      try {
+        user = await User.create({
+          firebaseUid: uid,
+          email,
+          name: name || email,
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+          profilePicture: photoURL || "",
+          lastLogin: new Date(),
+        });
 
-      // Log user registration activity
-      await logActivity(
-        user._id.toString(),
-        "user_registered",
-        {
-          email: user.email,
-          name: user.name,
-          registrationMethod: "firebase",
-        },
-        req
-      );
+        // Log user registration activity
+        await logActivity(
+          user._id.toString(),
+          "user_registered",
+          {
+            email: user.email,
+            name: user.name,
+            registrationMethod: "firebase",
+          },
+          req
+        );
+      } catch (error: any) {
+        // If duplicate key error, try to find the user again
+        if (error.code === 11000 && error.keyPattern?.email) {
+          user = await User.findOne({ email });
+          if (user) {
+            // Update the existing user with Firebase UID
+            user.firebaseUid = uid;
+            if (photoURL && !user.profilePicture) {
+              user.profilePicture = photoURL;
+            }
+            if (name && !user.name) {
+              user.name = name;
+            }
+            user.lastLogin = new Date();
+            await user.save();
+          } else {
+            throw error; // Re-throw if we can't find the user
+          }
+        } else {
+          throw error; // Re-throw for other errors
+        }
+      }
     }
 
     // Generate JWT token

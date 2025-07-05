@@ -6,7 +6,7 @@ dotenv.config();
 const MONGODB_URI = process.env.MONGODB_URI || "";
 
 if (!MONGODB_URI) {
-  console.error("MongoDB URI is not defined in environment variables");
+  // console.error("MongoDB URI is not defined in environment variables");
   process.exit(1);
 }
 
@@ -20,9 +20,9 @@ const connectDB = async (): Promise<void> => {
       serverSelectionTimeoutMS: 5000, // How long to try selecting a server
       socketTimeoutMS: 45000, // How long a send or receive on a socket can take
     });
-    console.log("MongoDB connected successfully");
+    // console.log("MongoDB connected successfully");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
+    // console.error("MongoDB connection error:", error);
     process.exit(1);
   }
 };

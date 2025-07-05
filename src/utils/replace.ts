@@ -208,13 +208,13 @@ export function generateHtmlFromTemplate(
     <script>
       // Define backgroundEffect in the global scope
       window.backgroundEffect = "${contentData.backgroundEffect || "none"}";
-      console.log("Background effect replaced to:", window.backgroundEffect);
+      // console.log("Background effect replaced to:", window.backgroundEffect);
       
       // Add a fallback initialization for the background effect
       document.addEventListener("DOMContentLoaded", function() {
         setTimeout(function() {
           if (typeof initBackgroundEffect === 'function' && !document.querySelector('.background-effect-container')) {
-            console.log("Fallback: Initializing background effect from replace.ts:", window.backgroundEffect);
+            // console.log("Fallback: Initializing background effect from replace.ts:", window.backgroundEffect);
             initBackgroundEffect(window.backgroundEffect);
           }
           
@@ -222,7 +222,7 @@ export function generateHtmlFromTemplate(
           setTimeout(function() {
             const bgContainer = document.querySelector('.background-effect-container');
             if (bgContainer) {
-              console.log("Applying force styles to background effect container");
+              // console.log("Applying force styles to background effect container");
               bgContainer.style.position = 'fixed';
               bgContainer.style.top = '0';
               bgContainer.style.left = '0';
@@ -235,7 +235,7 @@ export function generateHtmlFromTemplate(
               // Fix any parent element z-index issues
               const bgOverlays = document.querySelectorAll('.bg-overlay');
               if (bgOverlays.length > 0) {
-                console.log("Setting correct z-index for overlays");
+                // console.log("Setting correct z-index for overlays");
                 bgOverlays.forEach(overlay => {
                   overlay.style.zIndex = '2'; // Keep this below the background effect
                 });
@@ -244,7 +244,7 @@ export function generateHtmlFromTemplate(
               // Make sure content is above the background effect
               const quoteElements = document.querySelectorAll('.quote');
               if (quoteElements.length > 0) {
-                console.log("Setting correct z-index for content");
+                // console.log("Setting correct z-index for content");
                 quoteElements.forEach(quote => {
                   quote.style.zIndex = '10'; // Keep this above the background effect
                   quote.style.position = 'relative'; // Ensure z-index works
@@ -275,7 +275,7 @@ export function generateHtmlFromTemplate(
     }
     return htmlTemplate;
   } catch (error) {
-    console.error("Error generating HTML from template:", error);
+    // console.error("Error generating HTML from template:", error);
     return "";
   }
 }
