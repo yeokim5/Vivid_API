@@ -131,7 +131,7 @@ export function generateHtmlFromTemplate(
       // Replace the YouTube video code
       htmlTemplate = htmlTemplate.replace(
         /\[Video_Code\]/gi,
-        contentData.youtubeVideoCode!.trim()
+        `${contentData.youtubeVideoCode!.trim()}?autoplay=0&enablejsapi=1&playsinline=1&controls=1&rel=0&modestbranding=1&fs=1`
       );
 
       // Make sure the music player container is visible
