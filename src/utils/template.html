@@ -55,6 +55,9 @@
         --glass-border: rgba(255, 255, 255, 0.2);
         --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.3);
         --font-family: "[FONT_FAMILY]";
+        /* Mobile-friendly viewport units */
+        --vh: 1vh;
+        --real-vh: 1vh;
       }
 
       body {
@@ -306,6 +309,22 @@
 
       // Store the background effect type for reference
       window.essayBackgroundEffect = "[BACKGROUND_EFFECT]";
+
+      // Fix mobile viewport height issues
+      function setMobileViewport() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", vh + "px");
+        document.documentElement.style.setProperty("--real-vh", vh + "px");
+      }
+
+      // Set initial viewport
+      setMobileViewport();
+
+      // Update on resize and orientation change
+      window.addEventListener("resize", setMobileViewport);
+      window.addEventListener("orientationchange", () => {
+        setTimeout(setMobileViewport, 100);
+      });
     </script>
 
     <!-- Load JavaScript files from frontend deployment -->
