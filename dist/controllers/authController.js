@@ -25,8 +25,8 @@ const firebaseLogin = async (req, res) => {
             res.status(400).json({ message: "User ID and email are required" });
             return;
         }
-        // First check if user exists with this email
-        let user = await User_1.default.findOne({ email });
+        // First check if user exists with this email or firebase UID
+        let user = await User_1.default.findOne({ $or: [{ email }, { firebaseUid: uid }] });
         let isNewUser = false;
         if (user) {
             // Update existing user with Firebase UID and other info
@@ -44,21 +44,47 @@ const firebaseLogin = async (req, res) => {
             // Create new user only if no user exists with this email
             isNewUser = true;
             const nameParts = name ? name.split(" ") : ["", ""];
-            user = await User_1.default.create({
-                firebaseUid: uid,
-                email,
-                name: name || email,
-                firstName: nameParts[0] || "",
-                lastName: nameParts.slice(1).join(" ") || "",
-                profilePicture: photoURL || "",
-                lastLogin: new Date(),
-            });
-            // Log user registration activity
-            await (0, activityLogger_1.logActivity)(user._id.toString(), "user_registered", {
-                email: user.email,
-                name: user.name,
-                registrationMethod: "firebase",
-            }, req);
+            try {
+                user = await User_1.default.create({
+                    firebaseUid: uid,
+                    email,
+                    name: name || email,
+                    firstName: nameParts[0] || "",
+                    lastName: nameParts.slice(1).join(" ") || "",
+                    profilePicture: photoURL || "",
+                    lastLogin: new Date(),
+                });
+                // Log user registration activity
+                await (0, activityLogger_1.logActivity)(user._id.toString(), "user_registered", {
+                    email: user.email,
+                    name: user.name,
+                    registrationMethod: "firebase",
+                }, req);
+            }
+            catch (error) {
+                // If duplicate key error, try to find the user again
+                if (error.code === 11000 && error.keyPattern?.email) {
+                    user = await User_1.default.findOne({ email });
+                    if (user) {
+                        // Update the existing user with Firebase UID
+                        user.firebaseUid = uid;
+                        if (photoURL && !user.profilePicture) {
+                            user.profilePicture = photoURL;
+                        }
+                        if (name && !user.name) {
+                            user.name = name;
+                        }
+                        user.lastLogin = new Date();
+                        await user.save();
+                    }
+                    else {
+                        throw error; // Re-throw if we can't find the user
+                    }
+                }
+                else {
+                    throw error; // Re-throw for other errors
+                }
+            }
         }
         // Generate JWT token
         const token = generateToken(user);

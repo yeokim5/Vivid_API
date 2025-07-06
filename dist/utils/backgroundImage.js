@@ -43,8 +43,8 @@ async function generateBackgroundImages(inputData) {
         });
         // Parse the JSON response
         const backgroundImagesJSON = response.choices[0].message.content || "{}";
-        console.log("\n=== Background Image Suggestions ===\n");
-        console.log(backgroundImagesJSON);
+        // console.log("\n=== Background Image Suggestions ===\n");
+        // console.log(backgroundImagesJSON);
         // Parse and clean the response
         let parsedResponse;
         try {
@@ -58,12 +58,12 @@ async function generateBackgroundImages(inputData) {
             return parsedResponse;
         }
         catch (e) {
-            console.error("Error parsing background images:", e);
+            // console.error("Error parsing background images:", e);
             return JSON.stringify({ error: "Failed to generate background images" });
         }
     }
     catch (error) {
-        console.error("Error:", error);
+        // console.error("Error:", error);
         return JSON.stringify({ error: "Failed to generate background images" });
     }
 }

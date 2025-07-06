@@ -58,7 +58,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
             contentData.youtubeVideoCode.trim() !== "undefined" &&
             contentData.youtubeVideoCode.trim() !== "null";
         if (hasValidVideoCode) {
-            // Replace the YouTube video code
+            // Replace the YouTube video code with just the video ID - no parameters
             htmlTemplate = htmlTemplate.replace(/\[Video_Code\]/gi, contentData.youtubeVideoCode.trim());
             // Make sure the music player container is visible
             htmlTemplate = htmlTemplate.replace(/<div class="music-player-container">/, `<div class="music-player-container" style="display: block !important;">`);
@@ -90,13 +90,13 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
     <script>
       // Define backgroundEffect in the global scope
       window.backgroundEffect = "${contentData.backgroundEffect || "none"}";
-      console.log("Background effect replaced to:", window.backgroundEffect);
+      // console.log("Background effect replaced to:", window.backgroundEffect);
       
       // Add a fallback initialization for the background effect
       document.addEventListener("DOMContentLoaded", function() {
         setTimeout(function() {
           if (typeof initBackgroundEffect === 'function' && !document.querySelector('.background-effect-container')) {
-            console.log("Fallback: Initializing background effect from replace.ts:", window.backgroundEffect);
+            // console.log("Fallback: Initializing background effect from replace.ts:", window.backgroundEffect);
             initBackgroundEffect(window.backgroundEffect);
           }
           
@@ -104,7 +104,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
           setTimeout(function() {
             const bgContainer = document.querySelector('.background-effect-container');
             if (bgContainer) {
-              console.log("Applying force styles to background effect container");
+              // console.log("Applying force styles to background effect container");
               bgContainer.style.position = 'fixed';
               bgContainer.style.top = '0';
               bgContainer.style.left = '0';
@@ -117,7 +117,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
               // Fix any parent element z-index issues
               const bgOverlays = document.querySelectorAll('.bg-overlay');
               if (bgOverlays.length > 0) {
-                console.log("Setting correct z-index for overlays");
+                // console.log("Setting correct z-index for overlays");
                 bgOverlays.forEach(overlay => {
                   overlay.style.zIndex = '2'; // Keep this below the background effect
                 });
@@ -126,7 +126,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
               // Make sure content is above the background effect
               const quoteElements = document.querySelectorAll('.quote');
               if (quoteElements.length > 0) {
-                console.log("Setting correct z-index for content");
+                // console.log("Setting correct z-index for content");
                 quoteElements.forEach(quote => {
                   quote.style.zIndex = '10'; // Keep this above the background effect
                   quote.style.position = 'relative'; // Ensure z-index works
@@ -153,7 +153,7 @@ function generateHtmlFromTemplate(contentData, templatePath = path_1.default.joi
         return htmlTemplate;
     }
     catch (error) {
-        console.error("Error generating HTML from template:", error);
+        // console.error("Error generating HTML from template:", error);
         return "";
     }
 }

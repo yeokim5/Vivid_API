@@ -12,9 +12,9 @@ try {
     firebase_admin_1.default.initializeApp({
         projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
     });
-    console.log("Firebase Admin SDK initialized successfully");
+    // console.log("Firebase Admin SDK initialized successfully");
 }
 catch (error) {
-    console.error("Firebase Admin SDK initialization error:", error);
+    // console.error("Firebase Admin SDK initialization error:", error);
 }
 exports.default = firebase_admin_1.default;
