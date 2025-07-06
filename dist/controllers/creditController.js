@@ -65,7 +65,7 @@ const createPaymentIntent = async (req, res) => {
         credits: 10,
         amount: 499, // $4.99 in cents
         productId:
-          process.env.STRIPE_CREDIT_PRODUCT_ID || "prod_Sch3JXuKAgGoES",
+          process.env.STRIPE_CREDIT_PRODUCT_ID || "prod_Sd3V54uS5k0wmG",
       },
     };
     // Validate package selection
